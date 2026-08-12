@@ -4,9 +4,9 @@
   "description": "DriveManga - Google Drive Manga Reader Web Application",
   "main": "index.html",
   "scripts": {
-    "dev": "npx serve -p 3000",
-    "start": "npx serve -p 3000",
-    "serve": "npx serve -p 3000"
+    "dev": "npx serve -s -p 3000",
+    "start": "npx serve -s -p 3000",
+    "serve": "npx serve -s -p 3000"
   },
   "keywords": [
     "manga",

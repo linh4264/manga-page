@@ -124,7 +124,12 @@ window.LibraryComponent = class LibraryComponent {
     return card;
   }
 
-  showDetailView(manga) {
+  showDetailView(manga, pushState = true) {
+    if (pushState && this.state?.router) {
+      this.state.router.goManga(manga.id);
+      return;
+    }
+
     this.libraryContainer.classList.add('hidden');
     this.detailContainer.classList.remove('hidden');
     
@@ -199,8 +204,12 @@ window.LibraryComponent = class LibraryComponent {
 
     // Event handlers for detail view buttons
     document.getElementById('btn-back-library').addEventListener('click', () => {
-      this.detailContainer.classList.add('hidden');
-      this.libraryContainer.classList.remove('hidden');
+      if (this.state?.router) {
+        this.state.router.goHome();
+      } else {
+        this.detailContainer.classList.add('hidden');
+        this.libraryContainer.classList.remove('hidden');
+      }
     });
 
     document.getElementById('btn-add-chapter')?.addEventListener('click', () => {

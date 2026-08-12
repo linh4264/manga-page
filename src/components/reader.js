@@ -74,7 +74,12 @@ window.ReaderComponent = class ReaderComponent {
     this.readerMainArea?.addEventListener('scroll', () => this.handleScroll());
   }
 
-  open(manga, chapterId) {
+  open(manga, chapterId, pushState = true) {
+    if (pushState && this.state?.router) {
+      this.state.router.goChapter(manga.id, chapterId);
+      return;
+    }
+
     this.currentManga = manga;
     if (this.readerMangaTitleTop) this.readerMangaTitleTop.textContent = manga.title;
     if (this.sidebarMangaTitle) this.sidebarMangaTitle.textContent = manga.title;
@@ -97,6 +102,10 @@ window.ReaderComponent = class ReaderComponent {
     this.stopAutoScroll();
     this.readerWrapper.classList.add('hidden');
     document.body.style.overflow = '';
+
+    if (this.state?.router && this.currentManga) {
+      this.state.router.goManga(this.currentManga.id);
+    }
   }
 
   loadChapter(chapterId) {
@@ -107,6 +116,10 @@ window.ReaderComponent = class ReaderComponent {
     this.currentChapter = chapter;
     this.readerChapterSelect.value = chapterId;
     this.currentPageIndex = 0;
+
+    if (this.state?.router && this.currentManga) {
+      this.state.router.pushRoute(`/${this.currentManga.id}/${chapterId}`);
+    }
 
     // Render Canvas Pages
     this.renderPages();

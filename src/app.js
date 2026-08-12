@@ -84,12 +84,19 @@ class MangaApp {
       }
     );
 
+    // Initialize SPA Router
+    this.router = new window.AppRouter(this);
+
     // Bind Header Buttons
     document.getElementById('brand-home-link')?.addEventListener('click', () => {
-      document.getElementById('detail-view').classList.add('hidden');
-      document.getElementById('library-view').classList.remove('hidden');
-      this.libraryComponent.renderCatalog();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (this.router) {
+        this.router.goHome();
+      } else {
+        document.getElementById('detail-view').classList.add('hidden');
+        document.getElementById('library-view').classList.remove('hidden');
+        this.libraryComponent.renderCatalog();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     });
 
     document.getElementById('btn-open-import')?.addEventListener('click', () => {
@@ -121,7 +128,7 @@ class MangaApp {
     // Initial render
     this.libraryComponent.renderCatalog();
 
-    // Sync live Google Sheet data
+    // Sync live Google Sheet data & handle initial URL Route
     await this.syncGoogleSheetData();
   }
 
@@ -134,6 +141,10 @@ class MangaApp {
           this.libraryComponent.renderCatalog();
         }
       }
+    }
+    // Handle URL routing after data sync
+    if (this.router) {
+      this.router.handleRoute();
     }
   }
 }
