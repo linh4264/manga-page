@@ -590,7 +590,7 @@ input:focus, select:focus, textarea:focus {
   transition: width 0.1s linear;
 }
 
-/* Floating Top Controls */
+/* Floating Top Controls (Quick Back Button Only) */
 .reader-top-floating {
   position: fixed;
   top: 16px;
@@ -598,10 +598,10 @@ input:focus, select:focus, textarea:focus {
   z-index: 1020;
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
   background: rgba(15, 23, 42, 0.85);
   backdrop-filter: blur(16px);
-  padding: 6px 16px;
+  padding: 4px;
   border-radius: var(--radius-full);
   border: 1px solid var(--bg-glass-border);
   box-shadow: var(--shadow-lg);
@@ -786,6 +786,7 @@ input:focus, select:focus, textarea:focus {
   display: flex;
   align-items: center;
   gap: 6px;
+  width: 100%;
 }
 
 .btn-nav-square {
@@ -801,6 +802,7 @@ input:focus, select:focus, textarea:focus {
   font-size: 0.75rem;
   transition: var(--transition-fast);
   flex-shrink: 0;
+  cursor: pointer;
 }
 
 .btn-nav-square:hover {
@@ -811,14 +813,17 @@ input:focus, select:focus, textarea:focus {
 
 .sidebar-select {
   flex: 1;
+  min-width: 0;
   height: 32px;
-  padding: 0 8px;
+  padding: 0 6px;
   font-size: 0.8rem;
   border-radius: var(--radius-sm);
   background: #161c2b;
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: var(--text-primary);
   text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .setting-row {
