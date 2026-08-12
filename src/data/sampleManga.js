@@ -117,5 +117,29 @@ window.SAMPLE_MANGA_DATA = [
         ]
       }
     ]
+  },
+  {
+    id: 'pdf-manga-demo',
+    title: 'Demo Đọc Tệp PDF (Google Drive / Online PDF)',
+    originalTitle: 'PDF Reader Integration Sample',
+    author: 'Mozilla PDF.js / Google Drive',
+    artist: 'Open Source PDF Engine',
+    status: 'Hoàn thành',
+    coverUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=1200&auto=format&fit=crop&q=80',
+    description: 'Bộ truyện mẫu kiểm thử tính năng giải mã và hiển thị trực tiếp tệp PDF từ Google Drive hoặc đường dẫn PDF trên mạng. Hỗ trợ đầy đủ cuộn Webtoon, zoom và phím tắt.',
+    genres: ['PDF', 'Google Drive', 'Slice of Life'],
+    rating: 5.0,
+    views: '880K',
+    chapters: [
+      {
+        id: 'chap-1',
+        title: 'Chương 1: Tài Liệu PDF Mẫu (Mozilla Test Specification)',
+        updatedAt: '2026-08-12',
+        pdfUrl: 'https://raw.githubusercontent.com/mozilla/pdf.js/ba2edeae/web/compressed.tracemonkey-pldi-09.pdf',
+        isPdf: true,
+        pages: ['https://raw.githubusercontent.com/mozilla/pdf.js/ba2edeae/web/compressed.tracemonkey-pldi-09.pdf']
+      }
+    ]
   }
 ];

@@ -100,12 +100,25 @@ window.ReaderComponent = class ReaderComponent {
     this.readerCanvas.className = `reader-canvas ${this.zoomLevel}`;
 
     const pages = this.currentChapter.pages || [];
+    const pdfSource = this.currentChapter.pdfUrl || (pages[0] && window.PdfHelper.isPdfSource(pages[0]) ? pages[0] : null);
+
+    // If Chapter source is a PDF file
+    if (pdfSource || this.currentChapter.isPdf) {
+      const source = pdfSource || pages[0];
+      window.PdfHelper.renderPdfToContainer(source, this.readerCanvas, (totalPdfPages) => {
+        if (!this.currentChapter.pages || this.currentChapter.pages.length !== totalPdfPages) {
+          this.currentChapter.pages = Array.from({ length: totalPdfPages }, (_, i) => `PDF Page ${i + 1}`);
+        }
+        this.updateProgressUI();
+      });
+      return;
+    }
     
     if (pages.length === 0) {
       this.readerCanvas.innerHTML = `
         <div style="padding: 4rem; text-align: center; color: var(--text-muted);">
           <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 1rem;"></i>
-          <p>Chương này chưa có ảnh hoặc link Google Drive không khả dụng.</p>
+          <p>Chương này chưa có ảnh/PDF hoặc link Google Drive không khả dụng.</p>
         </div>
       `;
       return;
@@ -121,9 +134,9 @@ window.ReaderComponent = class ReaderComponent {
       img.loading = index < 3 ? 'eager' : 'lazy';
 
       // Check if pageItem is a Google Drive link / ID or full URL
-      const fileId = DriveHelper.extractFileId(pageItem);
+      const fileId = window.DriveHelper.extractFileId(pageItem);
       if (fileId) {
-        DriveHelper.attachImageFallback(img, fileId);
+        window.DriveHelper.attachImageFallback(img, fileId);
       } else {
         img.src = pageItem;
         img.onerror = () => {
