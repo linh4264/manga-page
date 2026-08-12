@@ -11,23 +11,20 @@ class MangaApp {
   }
 
   getAllManga() {
-    return [...this.customMangaList, ...this.sheetMangaList, ...(window.SAMPLE_MANGA_DATA || [])];
+    // Chỉ trả về dữ liệu lấy trực tiếp từ Google Sheet
+    return this.sheetMangaList;
   }
 
   async addCustomManga(mangaObj) {
-    this.customMangaList.unshift(mangaObj);
-    localStorage.setItem('custom_manga_list', JSON.stringify(this.customMangaList));
-    
-    if (this.libraryComponent) {
-      this.libraryComponent.renderCatalog();
-    }
-
-    // Attempt to save to Google Sheets Cloud Database if URL configured
     if (window.SheetDatabase && window.SheetDatabase.apiUrl) {
       await window.SheetDatabase.saveMangaToSheet(mangaObj);
-      alert('✅ Đã thêm truyện thành công và tự động đẩy dữ liệu sang Google Sheet!');
+      alert('✅ Đã đăng truyện thành công lên Google Sheet!');
+      // Re-sync live data from Google Sheet
+      setTimeout(() => {
+        this.syncGoogleSheetData();
+      }, 1200);
     } else {
-      alert('⚠️ Đã thêm truyện vào bộ nhớ trình duyệt! (Để đồng bộ sang Google Sheet công khai, hãy bấm nút "Kết nối Google Sheet" trên menu để dán Web App URL).');
+      alert('⚠️ Bạn chưa kết nối Google Sheet! Vui lòng bấm nút "Kết nối Google Sheet" trên menu để dán Web App URL trước khi đăng truyện.');
     }
   }
 
