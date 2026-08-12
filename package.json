@@ -1,0 +1,19 @@
+{
+  "name": "manga-page",
+  "version": "1.0.0",
+  "description": "DriveManga - Google Drive Manga Reader Web Application",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx serve -p 3000",
+    "start": "npx serve -p 3000",
+    "serve": "npx serve -p 3000"
+  },
+  "keywords": [
+    "manga",
+    "reader",
+    "pdf",
+    "google-drive"
+  ],
+  "author": "",
+  "license": "ISC"
+}
