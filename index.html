@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DriveManga - Web Đọc Truyện Tranh Google Drive</title>
+  <meta name="description" content="Trang web đọc truyện tranh online cao cấp hỗ trợ đọc trực tiếp từ nguồn ảnh Google Drive với tốc độ cao, chế độ cuộn Webtoon và giao diện Glassmorphism hiện đại.">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="styles/index.css">
+</head>
+<body>
+
+  <!-- Top App Navigation Bar -->
+  <header class="app-header">
+    <div class="brand-logo" id="brand-home-link">
+      <div class="logo-icon"><i class="fab fa-google-drive"></i></div>
+      <div>Drive<span>Manga</span></div>
+    </div>
+
+    <div class="search-box">
+      <i class="fas fa-search search-icon"></i>
+      <input type="text" id="search-input" placeholder="Tìm tên truyện, tác giả... (Gõ '/')">
+    </div>
+
+    <div class="nav-controls">
+      <button class="btn-primary" id="btn-open-import">
+        <i class="fas fa-plus-circle"></i> <span>+ Thêm Truyện Drive</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main View Container -->
+  <main class="view-container">
+
+    <!-- Library View Section -->
+    <section id="library-view">
+      <!-- Hero Banner -->
+      <div class="hero-banner">
+        <div class="hero-content">
+          <span class="badge" style="margin-bottom: 0.75rem;"><i class="fas fa-bolt"></i> Google Drive Streaming</span>
+          <h1>Nền Tảng Đọc Truyện Tranh Tải Trực Tiếp Từ Drive</h1>
+          <p>Tự do trải nghiệm hàng trăm bộ manga, manhwa chất lượng cao hoặc dán liên kết Google Drive của chính bạn để bắt đầu đọc ngay lập tức.</p>
+          <button class="btn-primary" onclick="document.getElementById('manga-grid').scrollIntoView({behavior: 'smooth'})">
+            <i class="fas fa-book-open"></i> Khám Phá Ngay
+          </button>
+        </div>
+      </div>
+
+      <!-- Category Filter Bar -->
+      <div class="section-header">
+        <h2 class="section-title"><i class="fas fa-compass"></i> Thư Viện Truyện</h2>
+      </div>
+      <div class="genre-filter-bar" id="genre-filter-bar">
+        <!-- Dynamically rendered -->
+      </div>
+
+      <!-- Manga Grid -->
+      <div class="manga-grid" id="manga-grid">
+        <!-- Dynamically rendered -->
+      </div>
+    </section>
+
+    <!-- Manga Detail View Section -->
+    <section id="detail-view" class="hidden">
+      <!-- Dynamically rendered -->
+    </section>
+
+  </main>
+
+  <!-- Fullscreen Immersive Reader Component -->
+  <div id="reader-wrapper" class="reader-wrapper hidden">
+    
+    <!-- Top Reader Header Bar -->
+    <div id="reader-header" class="reader-header">
+      <div class="reader-title-group">
+        <button id="btn-close-reader" class="btn-icon" title="Thoát trình đọc (Esc)"><i class="fas fa-arrow-left"></i></button>
+        <span id="reader-manga-title" style="font-weight: 700; font-family: 'Outfit', sans-serif;">DriveManga</span>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <select id="reader-chapter-select" style="padding: 6px 14px; font-size: 0.85rem;">
+          <!-- Dynamically populated -->
+        </select>
+        <div id="page-counter" class="badge">1 / 1</div>
+      </div>
+    </div>
+
+    <!-- Progress Indicator Bar -->
+    <div style="position: fixed; top: 64px; left: 0; right: 0; height: 3px; background: rgba(255,255,255,0.05); z-index: 1011;">
+      <div id="reader-progress-bar" style="height: 100%; width: 0%; background: var(--accent-gradient); transition: width 0.1s linear;"></div>
+    </div>
+
+    <!-- Reader Image Canvas Container -->
+    <main id="reader-canvas" class="reader-canvas">
+      <!-- Images rendered here -->
+    </main>
+
+    <!-- Floating Bottom Controls Overlay -->
+    <div id="reader-controls" class="reader-controls-bar">
+      <button id="btn-prev-chapter" class="btn-icon" title="Chương trước"><i class="fas fa-chevron-left"></i></button>
+      
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <select id="select-reading-mode" style="padding: 6px 12px; font-size: 0.8rem;" title="Chế độ đọc">
+          <option value="webtoon">📜 Cuộn dọc (Webtoon)</option>
+          <option value="single">📄 Từng trang (Single)</option>
+        </select>
+
+        <select id="select-zoom-level" style="padding: 6px 12px; font-size: 0.8rem;" title="Khung hiển thị">
+          <option value="default">📱 Vừa màn hình (Standard)</option>
+          <option value="wide">💻 Rộng (Wide 1200px)</option>
+          <option value="full">🖥️ Toàn khổ (Full Width)</option>
+        </select>
+      </div>
+
+      <button id="btn-toggle-autoscroll" class="btn-icon" title="Tự động cuộn (Auto-scroll)"><i class="fas fa-play"></i></button>
+      <button id="btn-toggle-fullscreen" class="btn-icon" title="Toàn màn hình (F)"><i class="fas fa-expand"></i></button>
+
+      <button id="btn-next-chapter" class="btn-icon" title="Chương sau"><i class="fas fa-chevron-right"></i></button>
+    </div>
+
+  </div>
+
+  <!-- Application Scripts (Standard JS for direct file:// & local server support) -->
+  <script src="src/driveHelper.js"></script>
+  <script src="src/data/sampleManga.js"></script>
+  <script src="src/components/reader.js"></script>
+  <script src="src/components/library.js"></script>
+  <script src="src/components/importModal.js"></script>
+  <script src="src/app.js"></script>
+</body>
+</html>
