@@ -85,7 +85,7 @@ window.AddChapterModalComponent = class AddChapterModalComponent {
 
   async handleSubmit(e) {
     e.preventDefault();
-    if (!this.targetManga) return;
+    if (this.isSubmitting || !this.targetManga) return;
 
     const chapterTitle = document.getElementById('add-chapter-title').value.trim();
     const pdfUrl = document.getElementById('add-chap-pdf-url').value.trim();
@@ -101,27 +101,42 @@ window.AddChapterModalComponent = class AddChapterModalComponent {
       return;
     }
 
-    const newChapter = {
-      id: 'chap-' + ((this.targetManga.chapters ? this.targetManga.chapters.length : 0) + 1) + '-' + Date.now(),
-      title: chapterTitle,
-      updatedAt: new Date().toISOString().split('T')[0],
-      pages: [pdfUrl],
-      pdfUrl: pdfUrl,
-      isPdf: true
-    };
-
-    if (!this.targetManga.chapters) {
-      this.targetManga.chapters = [];
+    const submitBtn = this.modalOverlay.querySelector('button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang thêm...';
     }
+    this.isSubmitting = true;
 
-    this.targetManga.chapters.push(newChapter);
+    try {
+      const newChapter = {
+        id: 'chap-' + ((this.targetManga.chapters ? this.targetManga.chapters.length : 0) + 1) + '-' + Date.now(),
+        title: chapterTitle,
+        updatedAt: new Date().toISOString().split('T')[0],
+        pages: [pdfUrl],
+        pdfUrl: pdfUrl,
+        isPdf: true
+      };
 
-    // Update manga to Google Sheet and state with Admin Password
-    await this.state.updateManga(this.targetManga, adminPassword);
-    this.close();
+      if (!this.targetManga.chapters) {
+        this.targetManga.chapters = [];
+      }
 
-    if (this.onChapterAdded) {
-      this.onChapterAdded(this.targetManga, newChapter);
+      this.targetManga.chapters.push(newChapter);
+
+      // Update manga to Google Sheet and state with Admin Password
+      await this.state.updateManga(this.targetManga, adminPassword);
+      this.close();
+
+      if (this.onChapterAdded) {
+        this.onChapterAdded(this.targetManga, newChapter);
+      }
+    } finally {
+      this.isSubmitting = false;
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-plus-circle"></i> Xác Nhận Thêm Chương';
+      }
     }
   }
 };

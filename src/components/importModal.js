@@ -107,6 +107,8 @@ window.ImportModalComponent = class ImportModalComponent {
   }
 
   async handleFormSubmit() {
+    if (this.isSubmitting) return;
+
     const title = document.getElementById('import-title').value.trim();
     const author = document.getElementById('import-author').value.trim() || 'Tác giả chưa cập nhật';
     const genresInput = document.getElementById('import-genres').value.trim();
@@ -127,38 +129,53 @@ window.ImportModalComponent = class ImportModalComponent {
       return;
     }
 
-    const defaultGenres = ['PDF', 'Google Drive'];
+    const submitBtn = this.modalOverlay.querySelector('button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang đăng...';
+    }
+    this.isSubmitting = true;
 
-    const newManga = {
-      id: 'custom-' + Date.now(),
-      title: title,
-      originalTitle: 'PDF Manga',
-      author: author,
-      artist: author,
-      status: 'Hoàn thành',
-      coverUrl: coverInput && !window.DriveHelper.extractFileId(coverInput) ? coverInput : '',
-      coverDriveId: window.DriveHelper.extractFileId(coverInput) || '',
-      description: description || 'Bộ truyện PDF được tạo từ người dùng.',
-      genres: genresInput ? genresInput.split(',').map(g => g.trim()) : defaultGenres,
-      rating: 5.0,
-      views: '1',
-      chapters: [
-        {
-          id: 'chap-1',
-          title: chapterTitle,
-          updatedAt: new Date().toISOString().split('T')[0],
-          pages: [pdfUrl],
-          pdfUrl: pdfUrl,
-          isPdf: true
-        }
-      ]
-    };
+    try {
+      const defaultGenres = ['PDF', 'Google Drive'];
 
-    this.state.addCustomManga(newManga, adminPassword);
-    this.close();
-    
-    if (this.onMangaAdded) {
-      this.onMangaAdded(newManga);
+      const newManga = {
+        id: 'custom-' + Date.now(),
+        title: title,
+        originalTitle: 'PDF Manga',
+        author: author,
+        artist: author,
+        status: 'Hoàn thành',
+        coverUrl: coverInput && !window.DriveHelper.extractFileId(coverInput) ? coverInput : '',
+        coverDriveId: window.DriveHelper.extractFileId(coverInput) || '',
+        description: description || 'Bộ truyện PDF được tạo từ người dùng.',
+        genres: genresInput ? genresInput.split(',').map(g => g.trim()) : defaultGenres,
+        rating: 5.0,
+        views: '1',
+        chapters: [
+          {
+            id: 'chap-1',
+            title: chapterTitle,
+            updatedAt: new Date().toISOString().split('T')[0],
+            pages: [pdfUrl],
+            pdfUrl: pdfUrl,
+            isPdf: true
+          }
+        ]
+      };
+
+      await this.state.addCustomManga(newManga, adminPassword);
+      this.close();
+      
+      if (this.onMangaAdded) {
+        this.onMangaAdded(newManga);
+      }
+    } finally {
+      this.isSubmitting = false;
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-plus-circle"></i> Thêm Vào Thư Viện';
+      }
     }
   }
 

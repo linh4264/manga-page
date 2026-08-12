@@ -86,7 +86,7 @@ window.EditChapterModalComponent = class EditChapterModalComponent {
 
   async handleSubmit(e) {
     e.preventDefault();
-    if (!this.targetManga || !this.targetChapter) return;
+    if (this.isSubmitting || !this.targetManga || !this.targetChapter) return;
 
     const newTitle = document.getElementById('edit-chapter-title').value.trim();
     const newPdfUrl = document.getElementById('edit-chapter-pdf-url').value.trim();
@@ -102,19 +102,34 @@ window.EditChapterModalComponent = class EditChapterModalComponent {
       return;
     }
 
-    // Update chapter properties
-    this.targetChapter.title = newTitle;
-    this.targetChapter.pdfUrl = newPdfUrl;
-    this.targetChapter.pages = [newPdfUrl];
-    this.targetChapter.isPdf = true;
-    this.targetChapter.updatedAt = new Date().toISOString().split('T')[0];
+    const submitBtn = this.modalOverlay.querySelector('button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu...';
+    }
+    this.isSubmitting = true;
 
-    // Update manga to Google Sheet and state with Admin Password
-    await this.state.updateManga(this.targetManga, adminPassword);
-    this.close();
+    try {
+      // Update chapter properties
+      this.targetChapter.title = newTitle;
+      this.targetChapter.pdfUrl = newPdfUrl;
+      this.targetChapter.pages = [newPdfUrl];
+      this.targetChapter.isPdf = true;
+      this.targetChapter.updatedAt = new Date().toISOString().split('T')[0];
 
-    if (this.onChapterUpdated) {
-      this.onChapterUpdated(this.targetManga, this.targetChapter);
+      // Update manga to Google Sheet and state with Admin Password
+      await this.state.updateManga(this.targetManga, adminPassword);
+      this.close();
+
+      if (this.onChapterUpdated) {
+        this.onChapterUpdated(this.targetManga, this.targetChapter);
+      }
+    } finally {
+      this.isSubmitting = false;
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-save"></i> Lưu Thay Đổi';
+      }
     }
   }
 };
