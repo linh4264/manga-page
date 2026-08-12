@@ -64,6 +64,12 @@ window.ImportModalComponent = class ImportModalComponent {
             <div class="form-hint">Dán đường dẫn tệp PDF Google Drive hoặc tệp PDF online</div>
           </div>
 
+          <!-- Admin Password Verification Field -->
+          <div class="form-group" style="background: rgba(99, 102, 241, 0.1); padding: 10px; border-radius: var(--radius-sm); border: 1px solid rgba(129, 140, 248, 0.3);">
+            <label style="color: #818cf8; font-weight: 700;"><i class="fas fa-lock"></i> Mật Khẩu Admin *</label>
+            <input type="password" id="import-admin-password" placeholder="Nhập mật khẩu Admin để xác thực..." required>
+          </div>
+
           <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; gap: 1rem;">
             <button type="button" id="btn-export-catalog" class="btn-secondary" style="font-size: 0.8rem;" title="Tải về file sampleManga.js để đè vào dự án trước khi deploy">
               <i class="fas fa-download" style="color: #818cf8;"></i> Xuất File Dữ Liệu Để Deploy Web
@@ -109,9 +115,15 @@ window.ImportModalComponent = class ImportModalComponent {
 
     const chapterTitle = document.getElementById('import-chapter-title').value.trim();
     const pdfUrl = document.getElementById('import-pdf-url').value.trim();
+    const adminPassword = document.getElementById('import-admin-password').value.trim();
 
     if (!pdfUrl) {
       alert('Vui lòng dán đường dẫn tệp PDF Google Drive hoặc PDF URL!');
+      return;
+    }
+
+    if (!adminPassword) {
+      alert('Vui lòng nhập Mật khẩu Admin để xác thực quyền đăng truyện!');
       return;
     }
 
@@ -142,7 +154,7 @@ window.ImportModalComponent = class ImportModalComponent {
       ]
     };
 
-    this.state.addCustomManga(newManga);
+    this.state.addCustomManga(newManga, adminPassword);
     this.close();
     
     if (this.onMangaAdded) {

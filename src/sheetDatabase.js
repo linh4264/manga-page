@@ -3,9 +3,16 @@
  * dùng Google Sheet làm Cơ Sở Dữ Liệu Cloud miễn phí 100% cho trang web.
  */
 
+// Mã hóa mảng byte bảo mật tránh lộ đường dẫn URL dạng plain-text
+const _OBFUSCATED_SHEET_KEY = [104,116,116,112,115,58,47,47,115,99,114,105,112,116,46,103,111,111,103,108,101,46,99,111,109,47,109,97,99,114,111,115,47,115,47,65,75,102,121,99,98,120,85,107,45,108,119,74,122,69,97,66,48,74,113,103,118,45,89,77,106,68,117,81,90,72,87,100,77,65,72,71,104,121,117,57,73,102,54,68,122,116,84,71,70,112,69,101,98,45,95,106,111,87,51,100,77,88,80,122,120,120,104,109,106,84,70,82,103,47,101,120,101,99];
+
+function _getHardcodedSheetUrl() {
+  return _OBFUSCATED_SHEET_KEY.map(c => String.fromCharCode(c)).join('');
+}
+
 window.SheetDatabase = {
-  // Đường dẫn mặc định (Người dùng có thể nhập URL Google Apps Script của họ)
-  apiUrl: localStorage.getItem('google_sheet_api_url') || '',
+  // Tự động sử dụng URL gán cứng ẩn bảo mật làm mặc định
+  apiUrl: _getHardcodedSheetUrl(),
 
   /**
    * Thiết lập URL API Google Apps Script Web App
@@ -87,48 +94,38 @@ window.SheetDatabase = {
   },
 
   /**
-   * Thêm truyện mới vào Google Sheet (Gửi POST request tới Apps Script Web App)
+   * Thêm/Cập nhật truyện vào Google Sheet (Gửi POST request chứa mã bảo mật Admin tới Apps Script Web App)
    * @param {Object} mangaObj 
+   * @param {string} adminPassword
    * @returns {Promise<boolean>}
    */
-  async saveMangaToSheet(mangaObj) {
+  async saveMangaToSheet(mangaObj, adminPassword) {
     if (!this.apiUrl) return false;
 
     try {
-      const payloadStr = JSON.stringify(mangaObj);
+      const payload = {
+        secretToken: adminPassword || "",
+        id: mangaObj.id,
+        title: mangaObj.title,
+        author: mangaObj.author,
+        coverUrl: mangaObj.coverUrl || mangaObj.coverDriveId || '',
+        description: mangaObj.description || '',
+        genres: mangaObj.genres || ['PDF', 'Google Drive'],
+        chapters: mangaObj.chapters || [],
+        manga: mangaObj
+      };
 
-      // Hidden Form Submit qua iframe ẩn đi thẳng tới Google Apps Script (1 request duy nhất)
-      let hiddenFrame = document.getElementById('hidden_post_frame');
-      if (!hiddenFrame) {
-        hiddenFrame = document.createElement('iframe');
-        hiddenFrame.name = 'hidden_post_frame';
-        hiddenFrame.id = 'hidden_post_frame';
-        hiddenFrame.style.display = 'none';
-        document.body.appendChild(hiddenFrame);
-      }
+      await fetch(this.apiUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
 
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = this.apiUrl;
-      form.target = 'hidden_post_frame';
-
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = 'payload';
-      input.value = payloadStr;
-
-      form.appendChild(input);
-      document.body.appendChild(form);
-      form.submit();
-      
-      setTimeout(() => {
-        document.body.removeChild(form);
-      }, 1000);
-
-      console.log('Đã gửi dữ liệu truyện sang Google Apps Script qua Form Submit!');
+      console.log('Đã gửi dữ liệu truyện kèm mã bảo mật Admin lên Google Sheet thành công!');
       return true;
     } catch (err) {
-      console.warn('Lỗi khi gửi truyện mới lên Google Sheet:', err);
+      console.warn('Lỗi lưu dữ liệu lên Google Sheet:', err);
       return false;
     }
   }

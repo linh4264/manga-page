@@ -88,10 +88,13 @@ window.LibraryComponent = class LibraryComponent {
     const card = document.createElement('div');
     card.className = 'manga-card';
 
-    // Resolve Cover URL
+    // Resolve Cover URL (Trực tiếp URL ảnh hoặc Link Google Drive)
     let coverSrc = manga.coverUrl;
     if (manga.coverDriveId) {
       coverSrc = DriveHelper.getImageUrls(manga.coverDriveId).primary;
+    } else if (manga.coverUrl && DriveHelper.extractFileId(manga.coverUrl)) {
+      const fileId = DriveHelper.extractFileId(manga.coverUrl);
+      coverSrc = DriveHelper.getImageUrls(fileId).primary;
     } else if (!coverSrc && manga.chapters?.[0]?.pages?.[0]) {
       const firstPage = manga.chapters[0].pages[0];
       const fileId = DriveHelper.extractFileId(firstPage);
@@ -139,10 +142,13 @@ window.LibraryComponent = class LibraryComponent {
     const bookmarks = JSON.parse(localStorage.getItem('manga_bookmarks') || '[]');
     const isBookmarked = bookmarks.includes(manga.id);
 
-    // Resolve cover image
+    // Resolve cover image (Trực tiếp URL ảnh hoặc Link Google Drive)
     let coverSrc = manga.coverUrl;
     if (manga.coverDriveId) {
       coverSrc = DriveHelper.getImageUrls(manga.coverDriveId).primary;
+    } else if (manga.coverUrl && DriveHelper.extractFileId(manga.coverUrl)) {
+      const fileId = DriveHelper.extractFileId(manga.coverUrl);
+      coverSrc = DriveHelper.getImageUrls(fileId).primary;
     }
 
     const history = JSON.parse(localStorage.getItem('manga_history') || '{}');

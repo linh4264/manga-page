@@ -44,6 +44,12 @@ window.EditChapterModalComponent = class EditChapterModalComponent {
             <div class="form-hint">Dán đường dẫn tệp PDF Google Drive mới hoặc link PDF online</div>
           </div>
 
+          <!-- Admin Password Field -->
+          <div class="form-group" style="background: rgba(99, 102, 241, 0.1); padding: 10px; border-radius: var(--radius-sm); border: 1px solid rgba(129, 140, 248, 0.3);">
+            <label style="color: #818cf8; font-weight: 700;"><i class="fas fa-lock"></i> Mật Khẩu Admin *</label>
+            <input type="password" id="edit-chapter-admin-password" placeholder="Nhập mật khẩu Admin để xác thực..." required>
+          </div>
+
           <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
             <button type="button" id="btn-cancel-edit-chapter-modal" class="btn-secondary">Hủy</button>
             <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Lưu Thay Đổi</button>
@@ -68,6 +74,8 @@ window.EditChapterModalComponent = class EditChapterModalComponent {
     document.getElementById('edit-chapter-manga-title').value = manga.title;
     document.getElementById('edit-chapter-title').value = chapter.title;
     document.getElementById('edit-chapter-pdf-url').value = chapter.pdfUrl || (chapter.pages ? chapter.pages[0] : '');
+    const passInput = document.getElementById('edit-chapter-admin-password');
+    if (passInput) passInput.value = '';
 
     this.modalOverlay.classList.remove('hidden');
   }
@@ -82,9 +90,15 @@ window.EditChapterModalComponent = class EditChapterModalComponent {
 
     const newTitle = document.getElementById('edit-chapter-title').value.trim();
     const newPdfUrl = document.getElementById('edit-chapter-pdf-url').value.trim();
+    const adminPassword = document.getElementById('edit-chapter-admin-password').value.trim();
 
     if (!newPdfUrl) {
       alert('Vui lòng dán đường dẫn tệp PDF mới!');
+      return;
+    }
+
+    if (!adminPassword) {
+      alert('Vui lòng nhập Mật khẩu Admin để xác thực quyền sửa chương!');
       return;
     }
 
@@ -95,8 +109,8 @@ window.EditChapterModalComponent = class EditChapterModalComponent {
     this.targetChapter.isPdf = true;
     this.targetChapter.updatedAt = new Date().toISOString().split('T')[0];
 
-    // Update manga to Google Sheet and state
-    await this.state.updateManga(this.targetManga);
+    // Update manga to Google Sheet and state with Admin Password
+    await this.state.updateManga(this.targetManga, adminPassword);
     this.close();
 
     if (this.onChapterUpdated) {

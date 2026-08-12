@@ -43,6 +43,12 @@ window.AddChapterModalComponent = class AddChapterModalComponent {
             <div class="form-hint">Dán đường dẫn tệp PDF trên Google Drive hoặc link PDF online</div>
           </div>
 
+          <!-- Admin Password Field -->
+          <div class="form-group" style="background: rgba(99, 102, 241, 0.1); padding: 10px; border-radius: var(--radius-sm); border: 1px solid rgba(129, 140, 248, 0.3);">
+            <label style="color: #818cf8; font-weight: 700;"><i class="fas fa-lock"></i> Mật Khẩu Admin *</label>
+            <input type="password" id="add-chap-admin-password" placeholder="Nhập mật khẩu Admin để xác thực..." required>
+          </div>
+
           <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
             <button type="button" id="btn-cancel-chapter-modal" class="btn-secondary">Hủy</button>
             <button type="submit" class="btn-primary"><i class="fas fa-plus-circle"></i> Xác Nhận Thêm Chương</button>
@@ -67,6 +73,8 @@ window.AddChapterModalComponent = class AddChapterModalComponent {
     document.getElementById('add-chapter-manga-title').value = manga.title;
     document.getElementById('add-chapter-title').value = `Chương ${nextChapNum}`;
     document.getElementById('add-chap-pdf-url').value = '';
+    const passInput = document.getElementById('add-chap-admin-password');
+    if (passInput) passInput.value = '';
     
     this.modalOverlay.classList.remove('hidden');
   }
@@ -81,9 +89,15 @@ window.AddChapterModalComponent = class AddChapterModalComponent {
 
     const chapterTitle = document.getElementById('add-chapter-title').value.trim();
     const pdfUrl = document.getElementById('add-chap-pdf-url').value.trim();
+    const adminPassword = document.getElementById('add-chap-admin-password').value.trim();
 
     if (!pdfUrl) {
       alert('Vui lòng dán đường dẫn tệp PDF!');
+      return;
+    }
+
+    if (!adminPassword) {
+      alert('Vui lòng nhập Mật khẩu Admin để xác thực quyền thêm chương!');
       return;
     }
 
@@ -102,8 +116,8 @@ window.AddChapterModalComponent = class AddChapterModalComponent {
 
     this.targetManga.chapters.push(newChapter);
 
-    // Update manga to Google Sheet and state
-    await this.state.updateManga(this.targetManga);
+    // Update manga to Google Sheet and state with Admin Password
+    await this.state.updateManga(this.targetManga, adminPassword);
     this.close();
 
     if (this.onChapterAdded) {

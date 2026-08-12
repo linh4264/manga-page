@@ -15,28 +15,27 @@ class MangaApp {
     return this.sheetMangaList;
   }
 
-  async addCustomManga(mangaObj) {
+  async addCustomManga(mangaObj, adminPassword) {
     if (window.SheetDatabase && window.SheetDatabase.apiUrl) {
-      await window.SheetDatabase.saveMangaToSheet(mangaObj);
+      await window.SheetDatabase.saveMangaToSheet(mangaObj, adminPassword);
       alert('✅ Đã đăng truyện thành công lên Google Sheet!');
-      // Re-sync live data from Google Sheet
       setTimeout(() => {
         this.syncGoogleSheetData();
       }, 1200);
     } else {
-      alert('⚠️ Bạn chưa kết nối Google Sheet! Vui lòng bấm nút "Kết nối Google Sheet" trên menu để dán Web App URL trước khi đăng truyện.');
+      alert('⚠️ Chưa kết nối Google Sheet Database!');
     }
   }
 
-  async updateManga(mangaObj) {
+  async updateManga(mangaObj, adminPassword) {
     if (window.SheetDatabase && window.SheetDatabase.apiUrl) {
-      await window.SheetDatabase.saveMangaToSheet(mangaObj);
-      alert('✅ Đã thêm chương mới thành công và cập nhật lên Google Sheet!');
+      await window.SheetDatabase.saveMangaToSheet(mangaObj, adminPassword);
+      alert('✅ Đã lưu thay đổi thành công lên Google Sheet!');
       setTimeout(() => {
         this.syncGoogleSheetData();
       }, 1000);
     } else {
-      alert('⚠️ Bạn chưa kết nối Google Sheet! Vui lòng bấm nút "Kết nối Google Sheet" trên menu để dán Web App URL.');
+      alert('⚠️ Chưa kết nối Google Sheet Database!');
     }
   }
 
