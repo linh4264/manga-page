@@ -124,12 +124,85 @@ window.ReaderComponent = class ReaderComponent {
     // Render Canvas Pages
     this.renderPages();
 
-    // Update Progress History in localStorage
-    this.saveProgress();
-    
     // Reset scroll position to top
     this.readerWrapper.scrollTop = 0;
     this.updateProgressUI();
+    this.updateFacebookComments();
+  }
+
+  updateFacebookComments() {
+    const fbContainer = document.getElementById('fb-comments-container');
+    if (!fbContainer || !this.currentManga || !this.currentChapter) return;
+
+    let rawUrl = (this.currentChapter.fbCommentUrl || this.currentManga.fbCommentUrl || '').trim();
+    const hasCustomFbUrl = !!rawUrl;
+
+    if (!rawUrl) {
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:') {
+        // Tự động gắn Fanpage MidnightLilyVN của bạn làm mặc định khi thử nghiệm
+        rawUrl = 'https://www.facebook.com/MidnightLilyVN';
+      } else {
+        const baseUrl = window.location.protocol + '//' + window.location.host + window.location.pathname;
+        rawUrl = `${baseUrl}#/${this.currentManga.id}/${this.currentChapter.id}`;
+      }
+    }
+
+    // Tự động chuyển đổi link ảnh Fanpage dạng photo?fbid=XXX sang dạng link Fanpage Posts chuẩn
+    if (rawUrl.includes('facebook.com/photo') && rawUrl.includes('fbid=')) {
+      try {
+        const urlObj = new URL(rawUrl);
+        const fbid = urlObj.searchParams.get('fbid');
+        if (fbid) {
+          rawUrl = `https://www.facebook.com/MidnightLilyVN/posts/${fbid}`;
+        }
+      } catch (e) {}
+    }
+
+    // Tự động làm sạch các tham số rác nếu có
+    try {
+      if (rawUrl.includes('facebook.com')) {
+        const urlObj = new URL(rawUrl);
+        urlObj.searchParams.delete('notif_id');
+        urlObj.searchParams.delete('notif_t');
+        urlObj.searchParams.delete('ref');
+        urlObj.searchParams.delete('tracking');
+        rawUrl = urlObj.toString();
+      }
+    } catch (e) {}
+
+    // Phân loại thông minh Plugin Facebook:
+    // 1. Nếu là link facebook.com -> Dùng Plugin Embedded Post (fb-post) hiển thị cả Bài Đăng & Bình Luận
+    // 2. Nếu là link Website -> Dùng Plugin Comments (fb-comments)
+    if (rawUrl.includes('facebook.com')) {
+      fbContainer.innerHTML = `
+        <div style="margin-bottom: 6px; overflow: hidden; border-radius: var(--radius-sm);">
+          <div class="fb-post" 
+               data-href="${rawUrl}" 
+               data-width="100%" 
+               data-show-text="true">
+          </div>
+        </div>
+        <a href="${rawUrl}" target="_blank" rel="noopener noreferrer" 
+           style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 8px 12px; background: rgba(0, 132, 255, 0.15); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.3); border-radius: var(--radius-sm); font-size: 0.8rem; text-decoration: none; font-weight: 600; margin-top: 6px;">
+          <i class="fab fa-facebook" style="font-size: 1.05rem;"></i> Mở Bài Viết Trên Fanpage Midnight Lily
+        </a>
+      `;
+    } else {
+      fbContainer.innerHTML = `
+        <div style="margin-bottom: 6px;">
+          <div class="fb-comments" 
+               data-href="${rawUrl}" 
+               data-width="100%" 
+               data-nposts="5" 
+               data-colorscheme="dark">
+          </div>
+        </div>
+      `;
+    }
+
+    if (window.FB && window.FB.XFBML) {
+      window.FB.XFBML.parse(document.getElementById('fb-comments-wrapper'));
+    }
   }
 
   renderPages() {

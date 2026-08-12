@@ -135,6 +135,14 @@
 
 
 
+        <!-- Facebook Comments Box (Dynamic Per Chapter) -->
+        <div class="sidebar-box comments-section">
+          <div class="box-label"><i class="fab fa-facebook-messenger" style="color: #0084FF;"></i> BÌNH LUẬN FACEBOOK CHƯƠNG</div>
+          <div id="fb-comments-wrapper" style="background: rgba(15, 23, 42, 0.75); border: 1px solid var(--bg-glass-border); border-radius: var(--radius-sm); padding: 8px; overflow: hidden; min-height: 180px;">
+            <div id="fb-comments-container"></div>
+          </div>
+        </div>
+
         <!-- Local Chapter Notes Box (Pure Frontend Local Storage) -->
         <div class="sidebar-box comments-section">
           <div class="comments-header">
@@ -161,6 +169,10 @@
     </aside>
 
   </div>
+
+  <!-- Facebook SDK for Facebook Comments Plugin -->
+  <div id="fb-root"></div>
+  <script async defer crossorigin="anonymous" src="https://connect.facebook.net/vi_VN/sdk.js#xfbml=1&version=v18.0"></script>
 
   <!-- PDF.js CDN Library for Client-Side PDF Rendering -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>

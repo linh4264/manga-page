@@ -44,6 +44,13 @@ window.EditChapterModalComponent = class EditChapterModalComponent {
             <div class="form-hint">Dán đường dẫn tệp PDF Google Drive mới hoặc link PDF online</div>
           </div>
 
+          <!-- Optional Facebook Post URL Input -->
+          <div class="form-group">
+            <label><i class="fab fa-facebook-messenger" style="color: #0084FF;"></i> Link Bài Viết Facebook (Tùy chọn)</label>
+            <input type="text" id="edit-chapter-fb-url" placeholder="VD: https://www.facebook.com/fanpage/posts/12345678">
+            <div class="form-hint">Dán link bài viết Facebook nếu muốn lấy bình luận từ một bài đăng Facebook có sẵn</div>
+          </div>
+
           <!-- Admin Password Field -->
           <div class="form-group" style="background: rgba(99, 102, 241, 0.1); padding: 10px; border-radius: var(--radius-sm); border: 1px solid rgba(129, 140, 248, 0.3);">
             <label style="color: #818cf8; font-weight: 700;"><i class="fas fa-lock"></i> Mật Khẩu Admin *</label>
@@ -74,6 +81,7 @@ window.EditChapterModalComponent = class EditChapterModalComponent {
     document.getElementById('edit-chapter-manga-title').value = manga.title;
     document.getElementById('edit-chapter-title').value = chapter.title;
     document.getElementById('edit-chapter-pdf-url').value = chapter.pdfUrl || (chapter.pages ? chapter.pages[0] : '');
+    document.getElementById('edit-chapter-fb-url').value = chapter.fbCommentUrl || '';
     const passInput = document.getElementById('edit-chapter-admin-password');
     if (passInput) passInput.value = '';
 
@@ -90,6 +98,7 @@ window.EditChapterModalComponent = class EditChapterModalComponent {
 
     const newTitle = document.getElementById('edit-chapter-title').value.trim();
     const newPdfUrl = document.getElementById('edit-chapter-pdf-url').value.trim();
+    const fbCommentUrl = document.getElementById('edit-chapter-fb-url').value.trim();
     const adminPassword = document.getElementById('edit-chapter-admin-password').value.trim();
 
     if (!newPdfUrl) {
@@ -114,6 +123,7 @@ window.EditChapterModalComponent = class EditChapterModalComponent {
       this.targetChapter.title = newTitle;
       this.targetChapter.pdfUrl = newPdfUrl;
       this.targetChapter.pages = [newPdfUrl];
+      this.targetChapter.fbCommentUrl = fbCommentUrl;
       this.targetChapter.isPdf = true;
       this.targetChapter.updatedAt = new Date().toISOString().split('T')[0];
 
