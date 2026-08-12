@@ -552,9 +552,20 @@ input:focus, select:focus, textarea:focus {
 .reader-main-area {
   flex: 1;
   height: 100vh;
-  overflow-y: auto;
+  overflow: hidden !important; /* Cấm thanh cuộn */
   position: relative;
   scroll-behavior: smooth;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.reader-main-area::-webkit-scrollbar,
+.reader-wrapper::-webkit-scrollbar,
+.reader-sidebar::-webkit-scrollbar,
+.sidebar-body::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 .reader-progress-track {
@@ -662,6 +673,40 @@ input:focus, select:focus, textarea:focus {
   margin-right: -340px;
   pointer-events: none;
   opacity: 0;
+}
+
+/* Floating Expand Sidebar Button when Sidebar Collapsed */
+.btn-expand-sidebar {
+  position: fixed;
+  top: 16px;
+  right: 20px;
+  z-index: 1025;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(16px);
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--bg-glass-border);
+  box-shadow: var(--shadow-lg);
+  color: var(--text-primary);
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-expand-sidebar:hover {
+  background: var(--primary);
+  border-color: var(--primary);
+  transform: translateX(-4px);
+  box-shadow: var(--shadow-glow);
+}
+
+.reader-wrapper.sidebar-collapsed .btn-expand-sidebar {
+  display: flex !important;
 }
 
 .sidebar-header {

@@ -91,6 +91,11 @@
         <button id="btn-toggle-sidebar" class="btn-icon" title="Ẩn/Hiện Bảng Điều Khiển (S)"><i class="fas fa-columns"></i></button>
       </div>
 
+      <!-- Floating Button to Re-open Sidebar when Collapsed -->
+      <button id="btn-expand-sidebar" class="btn-expand-sidebar hidden" title="Mở lại Bảng Điều Khiển (S)">
+        <i class="fas fa-chevron-left"></i> <span>Bảng Điều Khiển</span>
+      </button>
+
       <!-- Reader Canvas for PDF Pages or Images -->
       <main id="reader-canvas" class="reader-canvas">
         <!-- Rendered Pages Here -->
@@ -130,42 +135,7 @@
           </div>
         </div>
 
-        <!-- Page Jump Control Box -->
-        <div class="sidebar-box">
-          <div class="box-label">ĐIỀU HƯỚNG TRANG</div>
-          <div class="nav-control-row">
-            <button id="btn-first-page" class="btn-nav-square" title="Trang đầu"><i class="fas fa-angle-double-left"></i></button>
-            <button id="btn-prev-page" class="btn-nav-square" title="Trang trước"><i class="fas fa-angle-left"></i></button>
-            <select id="reader-page-select" class="sidebar-select"></select>
-            <button id="btn-next-page" class="btn-nav-square" title="Trang sau"><i class="fas fa-angle-right"></i></button>
-            <button id="btn-last-page" class="btn-nav-square" title="Trang cuối"><i class="fas fa-angle-double-right"></i></button>
-          </div>
-        </div>
 
-        <!-- Display Options Box -->
-        <div class="sidebar-box">
-          <div class="box-label">TUỲ CHỈNH HIỂN THỊ</div>
-          <div class="setting-row">
-            <span><i class="fas fa-scroll"></i> Chế độ đọc:</span>
-            <select id="select-reading-mode" class="sidebar-select-sm">
-              <option value="webtoon">📜 Cuộn dọc Webtoon</option>
-              <option value="single">📄 Trang đơn</option>
-            </select>
-          </div>
-          <div class="setting-row" style="margin-top: 10px;">
-            <span><i class="fas fa-search-plus"></i> Khung xem:</span>
-            <select id="select-zoom-level" class="sidebar-select-sm">
-              <option value="default">📱 Vừa màn hình</option>
-              <option value="wide">💻 Rộng (1200px)</option>
-              <option value="full">🖥️ Toàn khổ 100%</option>
-            </select>
-          </div>
-          <div style="margin-top: 12px;">
-            <button id="btn-toggle-autoscroll" class="btn-sidebar-action">
-              <i class="fas fa-play"></i> Bật Tự Động Cuộn
-            </button>
-          </div>
-        </div>
 
         <!-- Local Chapter Notes Box (Pure Frontend Local Storage) -->
         <div class="sidebar-box comments-section">

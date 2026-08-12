@@ -31,6 +31,7 @@ window.ReaderComponent = class ReaderComponent {
     document.getElementById('btn-sidebar-home')?.addEventListener('click', () => this.close());
     document.getElementById('btn-toggle-sidebar')?.addEventListener('click', () => this.toggleSidebar());
     document.getElementById('btn-collapse-sidebar')?.addEventListener('click', () => this.toggleSidebar());
+    document.getElementById('btn-expand-sidebar')?.addEventListener('click', () => this.toggleSidebar());
     document.getElementById('btn-sidebar-fullscreen')?.addEventListener('click', () => this.toggleFullscreen());
     document.getElementById('btn-sidebar-bookmark')?.addEventListener('click', () => this.toggleBookmark());
 
@@ -63,6 +64,11 @@ window.ReaderComponent = class ReaderComponent {
 
     // Handle Keyboard Hotkeys
     window.addEventListener('keydown', (e) => this.handleKeyDown(e));
+
+    // Prohibit manual wheel and touch scrolling in reader mode
+    this.readerMainArea?.addEventListener('wheel', (e) => {
+      e.preventDefault();
+    }, { passive: false });
 
     // Handle Scroll for Webtoon Progress & Page tracking
     this.readerMainArea?.addEventListener('scroll', () => this.handleScroll());
@@ -173,6 +179,15 @@ window.ReaderComponent = class ReaderComponent {
 
   toggleSidebar() {
     this.readerWrapper.classList.toggle('sidebar-collapsed');
+    const isCollapsed = this.readerWrapper.classList.contains('sidebar-collapsed');
+    const expandBtn = document.getElementById('btn-expand-sidebar');
+    if (expandBtn) {
+      if (isCollapsed) {
+        expandBtn.classList.remove('hidden');
+      } else {
+        expandBtn.classList.add('hidden');
+      }
+    }
   }
 
   goToChapterIndex(index) {
