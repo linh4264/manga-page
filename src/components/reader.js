@@ -135,15 +135,14 @@ window.ReaderComponent = class ReaderComponent {
     if (!fbContainer || !this.currentManga || !this.currentChapter) return;
 
     let rawUrl = (this.currentChapter.fbCommentUrl || this.currentManga.fbCommentUrl || '').trim();
-    const hasCustomFbUrl = !!rawUrl;
 
     if (!rawUrl) {
       if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:') {
-        // Tự động gắn Fanpage MidnightLilyVN của bạn làm mặc định khi thử nghiệm
         rawUrl = 'https://www.facebook.com/MidnightLilyVN';
       } else {
-        const baseUrl = window.location.protocol + '//' + window.location.host + window.location.pathname;
-        rawUrl = `${baseUrl}#/${this.currentManga.id}/${this.currentChapter.id}`;
+        // Facebook SDK không đọc được ký tự '#' trong URL, đổi sang query param chuẩn ?manga=...&chap=...
+        const cleanOrigin = window.location.protocol + '//' + window.location.host + window.location.pathname;
+        rawUrl = `${cleanOrigin}?manga=${encodeURIComponent(this.currentManga.id)}&chap=${encodeURIComponent(this.currentChapter.id)}`;
       }
     }
 
@@ -170,39 +169,30 @@ window.ReaderComponent = class ReaderComponent {
       }
     } catch (e) {}
 
-    // Phân loại thông minh Plugin Facebook:
-    // 1. Nếu là link facebook.com -> Dùng Plugin Embedded Post (fb-post) hiển thị cả Bài Đăng & Bình Luận
-    // 2. Nếu là link Website -> Dùng Plugin Comments (fb-comments)
-    if (rawUrl.includes('facebook.com')) {
-      fbContainer.innerHTML = `
-        <div style="margin-bottom: 6px; overflow: hidden; border-radius: var(--radius-sm);">
-          <div class="fb-post" 
-               data-href="${rawUrl}" 
-               data-width="100%" 
-               data-show-text="true">
-          </div>
+    fbContainer.innerHTML = `
+      <div style="margin-bottom: 6px; min-height: 140px; width: 100%;">
+        <div class="fb-comments" 
+             data-href="${rawUrl}" 
+             data-width="100%" 
+             data-nposts="5" 
+             data-colorscheme="dark">
         </div>
-        <a href="${rawUrl}" target="_blank" rel="noopener noreferrer" 
-           style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 8px 12px; background: rgba(0, 132, 255, 0.15); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.3); border-radius: var(--radius-sm); font-size: 0.8rem; text-decoration: none; font-weight: 600; margin-top: 6px;">
-          <i class="fab fa-facebook" style="font-size: 1.05rem;"></i> Mở Bài Viết Trên Fanpage Midnight Lily
-        </a>
-      `;
-    } else {
-      fbContainer.innerHTML = `
-        <div style="margin-bottom: 6px;">
-          <div class="fb-comments" 
-               data-href="${rawUrl}" 
-               data-width="100%" 
-               data-nposts="5" 
-               data-colorscheme="dark">
-          </div>
-        </div>
-      `;
-    }
+      </div>
+      <a href="${rawUrl}" target="_blank" rel="noopener noreferrer" 
+         style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 8px 12px; background: rgba(0, 132, 255, 0.15); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.3); border-radius: var(--radius-sm); font-size: 0.8rem; text-decoration: none; font-weight: 600; margin-top: 6px;">
+        <i class="fab fa-facebook" style="font-size: 1.05rem;"></i> Mở Luồng Bình Luận Trên Facebook
+      </a>
+    `;
 
-    if (window.FB && window.FB.XFBML) {
-      window.FB.XFBML.parse(document.getElementById('fb-comments-wrapper'));
-    }
+    const triggerParse = () => {
+      if (window.FB && window.FB.XFBML) {
+        window.FB.XFBML.parse(document.getElementById('fb-comments-wrapper'));
+      }
+    };
+
+    triggerParse();
+    setTimeout(triggerParse, 600);
+    setTimeout(triggerParse, 1500);
   }
 
   renderPages() {
