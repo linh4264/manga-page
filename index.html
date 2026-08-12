@@ -6,6 +6,11 @@
   <title>DriveManga - Web Đọc Truyện Tranh Google Drive</title>
   <meta name="description" content="Trang web đọc truyện tranh online cao cấp hỗ trợ đọc trực tiếp từ nguồn ảnh Google Drive với tốc độ cao, chế độ cuộn Webtoon và giao diện Glassmorphism hiện đại.">
   
+  <!-- Google Fonts: Be Vietnam Pro & Plus Jakarta Sans (100% Tiếng Việt chuẩn) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- Stylesheet -->
@@ -43,12 +48,24 @@
       <!-- Hero Banner -->
       <div class="hero-banner">
         <div class="hero-content">
-          <span class="badge" style="margin-bottom: 0.75rem;"><i class="fas fa-bolt"></i> Google Drive Streaming</span>
+          <!-- Prominent Link to Manga Translator Studio App -->
+          <a href="https://manga-translator-studio.pages.dev/" target="_blank" rel="noopener noreferrer" class="hero-app-link-badge">
+            <i class="fas fa-wand-magic-sparkles" style="color: #fb7185;"></i>
+            <span>Truyện được edit bởi <strong>Manga Translator Studio</strong> — Bấm để sử dụng App</span>
+            <i class="fas fa-arrow-right icon-arrow"></i>
+          </a>
+
           <h1>Nền Tảng Đọc Truyện Tranh Tải Trực Tiếp Từ Drive</h1>
-          <p>Tự do trải nghiệm hàng trăm bộ manga, manhwa chất lượng cao hoặc dán liên kết Google Drive của chính bạn để bắt đầu đọc ngay lập tức.</p>
-          <button class="btn-primary" onclick="document.getElementById('manga-grid').scrollIntoView({behavior: 'smooth'})">
-            <i class="fas fa-book-open"></i> Khám Phá Ngay
-          </button>
+          <p>Tự do trải nghiệm hàng trăm bộ manga, manhwa chất lượng cao hoặc dán liên kết Google Drive để bắt đầu đọc ngay lập tức.</p>
+          
+          <div class="hero-cta-group">
+            <button class="btn-primary" onclick="document.getElementById('manga-grid').scrollIntoView({behavior: 'smooth'})">
+              <i class="fas fa-book-open"></i> Khám Phá Thư Viện
+            </button>
+            <a href="https://manga-translator-studio.pages.dev/" target="_blank" rel="noopener noreferrer" class="btn-hero-app">
+              <i class="fas fa-magic"></i> Truy Cập App Dịch Truyện
+            </a>
+          </div>
         </div>
       </div>
 
@@ -89,9 +106,9 @@
         <button id="btn-close-reader" class="btn-icon" title="Quay lại Thư viện (Esc)"><i class="fas fa-arrow-left"></i></button>
       </div>
 
-      <!-- Floating Button to Re-open Sidebar when Collapsed -->
+      <!-- Floating Button to Re-open Sidebar when Collapsed (Icon Only) -->
       <button id="btn-expand-sidebar" class="btn-expand-sidebar hidden" title="Mở lại Bảng Điều Khiển (S)">
-        <i class="fas fa-chevron-left"></i> <span>Bảng Điều Khiển</span>
+        <i class="fas fa-chevron-left"></i>
       </button>
 
       <!-- Reader Canvas for PDF Pages or Images -->
