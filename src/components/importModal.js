@@ -95,9 +95,15 @@ window.ImportModalComponent = class ImportModalComponent {
             <div class="form-hint">Tệp PDF sẽ được tải và đọc trực tiếp trong trình duyệt</div>
           </div>
 
-          <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem;">
-            <button type="button" id="btn-cancel-import" class="btn-secondary">Hủy</button>
-            <button type="submit" class="btn-primary"><i class="fas fa-plus-circle"></i> Thêm Vào Thư Viện</button>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; gap: 1rem;">
+            <button type="button" id="btn-export-catalog" class="btn-secondary" style="font-size: 0.8rem;" title="Tải về file sampleManga.js để đè vào dự án trước khi deploy">
+              <i class="fas fa-download" style="color: #818cf8;"></i> Xuất File Dữ Liệu Để Deploy Web
+            </button>
+
+            <div style="display: flex; gap: 0.75rem;">
+              <button type="button" id="btn-cancel-import" class="btn-secondary">Hủy</button>
+              <button type="submit" class="btn-primary"><i class="fas fa-plus-circle"></i> Thêm Vào Thư Viện</button>
+            </div>
           </div>
         </form>
       </div>
@@ -108,6 +114,7 @@ window.ImportModalComponent = class ImportModalComponent {
     // Event listeners
     document.getElementById('btn-close-import-modal').addEventListener('click', () => this.close());
     document.getElementById('btn-cancel-import').addEventListener('click', () => this.close());
+    document.getElementById('btn-export-catalog').addEventListener('click', () => this.exportCatalogFile());
     
     // Toggle source types UI
     const sourceTypeSelect = document.getElementById('import-source-type');
@@ -233,5 +240,22 @@ window.ImportModalComponent = class ImportModalComponent {
     if (this.onMangaAdded) {
       this.onMangaAdded(newManga);
     }
+  }
+
+  exportCatalogFile() {
+    const allManga = this.state.getAllManga();
+    const fileContent = `/**\n * Manga Catalog Database for Public Deployment.\n * Formatted automatically for DriveManga.\n */\n\nwindow.SAMPLE_MANGA_DATA = ${JSON.stringify(allManga, null, 2)};\n`;
+    
+    const blob = new Blob([fileContent], { type: 'text/javascript' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'sampleManga.js';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    alert('Đã tải tệp sampleManga.js mới về máy! Bạn chỉ cần thay tệp này vào thư mục src/data/sampleManga.js trong dự án rồi push/deploy lên GitHub/Vercel để mọi người cùng xem.');
   }
 }
