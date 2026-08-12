@@ -14,14 +14,22 @@ window.PdfHelper = {
   },
 
   /**
-   * Check if a string is a PDF URL or Google Drive PDF link
+   * Check if a string is a PDF URL or Google Drive PDF link/ID
    * @param {string} input 
    * @returns {boolean}
    */
   isPdfSource(input) {
     if (!input || typeof input !== 'string') return false;
     const lower = input.toLowerCase();
-    return lower.endsWith('.pdf') || lower.includes('.pdf?') || lower.includes('/pdf') || input.startsWith('data:application/pdf');
+    if (lower.endsWith('.pdf') || lower.includes('.pdf?') || lower.includes('/pdf') || input.startsWith('data:application/pdf')) {
+      return true;
+    }
+    // Check if string contains drive.google.com and has a valid file ID
+    if (lower.includes('drive.google.com') || lower.includes('docs.google.com')) {
+      const fileId = window.DriveHelper ? window.DriveHelper.extractFileId(input) : null;
+      return !!fileId;
+    }
+    return false;
   },
 
   /**
@@ -35,7 +43,7 @@ window.PdfHelper = {
   },
 
   /**
-   * Get Google Drive PDF Embedded Preview URL (IFrame fallback)
+   * Get Google Drive PDF Embedded Preview URL
    * @param {string} fileId 
    * @returns {string}
    */
@@ -136,18 +144,12 @@ window.PdfHelper = {
   },
 
   /**
-   * Render Google Drive Native Embedded Viewer inside the container as fallback
+   * Render Google Drive Native Embedded Viewer seamlessly without any extra outer box/border, flush with top screen edge
    */
   renderDriveEmbedFallback(fileId, container) {
     const embedUrl = this.getDrivePdfEmbedUrl(fileId);
     container.innerHTML = `
-      <div style="width: 100%; height: calc(100vh - 120px); border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--bg-glass-border);">
-        <div style="padding: 8px 16px; background: rgba(99, 102, 241, 0.15); color: #818cf8; font-size: 0.85rem; display: flex; align-items: center; justify-content: space-between;">
-          <span><i class="fab fa-google-drive"></i> Đang hiển thị trình đọc Google Drive PDF nhúng</span>
-          <a href="https://drive.google.com/file/d/${fileId}/view" target="_blank" style="color: #fff; text-decoration: underline;">Mở trên Google Drive <i class="fas fa-external-link-alt"></i></a>
-        </div>
-        <iframe src="${embedUrl}" style="width: 100%; height: calc(100% - 36px); border: none;" allow="autoplay"></iframe>
-      </div>
+      <iframe src="${embedUrl}" style="width: 100%; height: 100vh; border: none; background: transparent; display: block; border-radius: 0; margin-top: 0;" allow="autoplay"></iframe>
     `;
   }
 };

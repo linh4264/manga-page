@@ -134,11 +134,19 @@ window.SAMPLE_MANGA_DATA = [
     chapters: [
       {
         id: 'chap-1',
-        title: 'Chương 1: Tài Liệu PDF Mẫu (Mozilla Test Specification)',
+        title: 'Chương 1: Tài Liệu PDF Web Mẫu (Mozilla Test Specification)',
         updatedAt: '2026-08-12',
         pdfUrl: 'https://raw.githubusercontent.com/mozilla/pdf.js/ba2edeae/web/compressed.tracemonkey-pldi-09.pdf',
         isPdf: true,
         pages: ['https://raw.githubusercontent.com/mozilla/pdf.js/ba2edeae/web/compressed.tracemonkey-pldi-09.pdf']
+      },
+      {
+        id: 'chap-2',
+        title: 'Chương 2: Tệp PDF Trực Tiếp Lưu Trên Google Drive',
+        updatedAt: '2026-08-12',
+        pdfUrl: 'https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view?usp=sharing',
+        isPdf: true,
+        pages: ['https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view?usp=sharing']
       }
     ]
   }

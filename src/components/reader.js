@@ -16,20 +16,37 @@ window.ReaderComponent = class ReaderComponent {
 
   initDOMReferences() {
     this.readerWrapper = document.getElementById('reader-wrapper');
+    this.readerMainArea = document.getElementById('reader-main-area');
     this.readerCanvas = document.getElementById('reader-canvas');
-    this.readerHeader = document.getElementById('reader-header');
-    this.readerControls = document.getElementById('reader-controls');
-    this.readerMangaTitle = document.getElementById('reader-manga-title');
+    this.readerTopFloating = document.getElementById('reader-top-floating');
+    this.readerMangaTitleTop = document.getElementById('reader-manga-title-top');
+    this.sidebarMangaTitle = document.getElementById('sidebar-manga-title');
+    this.sidebarChapterSubtitle = document.getElementById('sidebar-chapter-subtitle');
     this.readerChapterSelect = document.getElementById('reader-chapter-select');
-    this.pageCounter = document.getElementById('page-counter');
+    this.readerPageSelect = document.getElementById('reader-page-select');
     this.progressBar = document.getElementById('reader-progress-bar');
     
-    // Bind Controls
+    // Bind General Action Controls
     document.getElementById('btn-close-reader')?.addEventListener('click', () => this.close());
-    document.getElementById('btn-prev-chapter')?.addEventListener('click', () => this.prevChapter());
-    document.getElementById('btn-next-chapter')?.addEventListener('click', () => this.nextChapter());
+    document.getElementById('btn-sidebar-home')?.addEventListener('click', () => this.close());
+    document.getElementById('btn-toggle-sidebar')?.addEventListener('click', () => this.toggleSidebar());
+    document.getElementById('btn-collapse-sidebar')?.addEventListener('click', () => this.toggleSidebar());
+    document.getElementById('btn-sidebar-fullscreen')?.addEventListener('click', () => this.toggleFullscreen());
+    document.getElementById('btn-sidebar-bookmark')?.addEventListener('click', () => this.toggleBookmark());
+
+    // Bind Chapter Navigation (|<, <, select, >, >|)
+    document.getElementById('btn-first-chapter')?.addEventListener('click', () => this.goToChapterIndex(0));
+    document.getElementById('btn-prev-chapter-side')?.addEventListener('click', () => this.prevChapter());
+    document.getElementById('btn-next-chapter-side')?.addEventListener('click', () => this.nextChapter());
+    document.getElementById('btn-last-chapter')?.addEventListener('click', () => this.goToChapterIndex((this.currentManga?.chapters?.length || 1) - 1));
+    
+    // Bind Page Navigation (<<, <, select 14/19, >, >>)
+    document.getElementById('btn-first-page')?.addEventListener('click', () => this.scrollToPage(0));
+    document.getElementById('btn-prev-page')?.addEventListener('click', () => this.scrollToPage(Math.max(0, this.currentPageIndex - 1)));
+    document.getElementById('btn-next-page')?.addEventListener('click', () => this.scrollToPage(Math.min((this.currentChapter?.pages?.length || 1) - 1, this.currentPageIndex + 1)));
+    document.getElementById('btn-last-page')?.addEventListener('click', () => this.scrollToPage((this.currentChapter?.pages?.length || 1) - 1));
+
     document.getElementById('btn-toggle-autoscroll')?.addEventListener('click', () => this.toggleAutoScroll());
-    document.getElementById('btn-toggle-fullscreen')?.addEventListener('click', () => this.toggleFullscreen());
     document.getElementById('select-reading-mode')?.addEventListener('change', (e) => this.setReadingMode(e.target.value));
     document.getElementById('select-zoom-level')?.addEventListener('change', (e) => this.setZoomLevel(e.target.value));
     
@@ -37,23 +54,24 @@ window.ReaderComponent = class ReaderComponent {
       this.loadChapter(e.target.value);
     });
 
+    this.readerPageSelect?.addEventListener('change', (e) => {
+      this.scrollToPage(parseInt(e.target.value, 10));
+    });
+
+    // Bind Comments submission
+    document.getElementById('btn-submit-comment')?.addEventListener('click', () => this.submitComment());
+
     // Handle Keyboard Hotkeys
     window.addEventListener('keydown', (e) => this.handleKeyDown(e));
 
-    // Handle Scroll for Webtoon Progress & Autohide Controls
-    this.readerWrapper?.addEventListener('scroll', () => this.handleScroll());
-    
-    // Toggle controls on canvas click
-    this.readerCanvas?.addEventListener('click', (e) => {
-      // Ignore click on images if user is selecting text
-      if (e.target.tagName === 'IMG') return;
-      this.toggleControls();
-    });
+    // Handle Scroll for Webtoon Progress & Page tracking
+    this.readerMainArea?.addEventListener('scroll', () => this.handleScroll());
   }
 
   open(manga, chapterId) {
     this.currentManga = manga;
-    this.readerMangaTitle.textContent = manga.title;
+    if (this.readerMangaTitleTop) this.readerMangaTitleTop.textContent = manga.title;
+    if (this.sidebarMangaTitle) this.sidebarMangaTitle.textContent = manga.title;
     
     // Populate chapter select dropdown
     this.readerChapterSelect.innerHTML = '';
@@ -104,6 +122,7 @@ window.ReaderComponent = class ReaderComponent {
 
     // If Chapter source is a PDF file
     if (pdfSource || this.currentChapter.isPdf) {
+      this.readerCanvas.className = `reader-canvas ${this.zoomLevel} is-pdf-mode`;
       const source = pdfSource || pages[0];
       window.PdfHelper.renderPdfToContainer(source, this.readerCanvas, (totalPdfPages) => {
         if (!this.currentChapter.pages || this.currentChapter.pages.length !== totalPdfPages) {
@@ -152,11 +171,32 @@ window.ReaderComponent = class ReaderComponent {
     this.updateProgressUI();
   }
 
-  handleScroll() {
-    if (this.readerWrapper.classList.contains('hidden')) return;
+  toggleSidebar() {
+    this.readerWrapper.classList.toggle('sidebar-collapsed');
+  }
 
-    const scrollTop = this.readerWrapper.scrollTop;
-    const scrollHeight = this.readerWrapper.scrollHeight - this.readerWrapper.clientHeight;
+  goToChapterIndex(index) {
+    const chapters = this.currentManga?.chapters || [];
+    if (index >= 0 && index < chapters.length) {
+      this.loadChapter(chapters[index].id);
+    }
+  }
+
+  scrollToPage(pageIdx) {
+    const pageElements = this.readerCanvas.querySelectorAll('.reader-page-item');
+    if (pageElements[pageIdx]) {
+      const targetY = pageElements[pageIdx].offsetTop - 20;
+      this.readerMainArea.scrollTo({ top: targetY, behavior: 'smooth' });
+      this.currentPageIndex = pageIdx;
+      this.updatePageCounter();
+    }
+  }
+
+  handleScroll() {
+    if (this.readerWrapper.classList.contains('hidden') || !this.readerMainArea) return;
+
+    const scrollTop = this.readerMainArea.scrollTop;
+    const scrollHeight = this.readerMainArea.scrollHeight - this.readerMainArea.clientHeight;
     
     if (scrollHeight <= 0) return;
 
@@ -168,7 +208,7 @@ window.ReaderComponent = class ReaderComponent {
     // Determine currently visible page index in Webtoon view
     const pageElements = this.readerCanvas.querySelectorAll('.reader-page-item');
     let currentIdx = 0;
-    const wrapperCenter = scrollTop + this.readerWrapper.clientHeight / 2;
+    const wrapperCenter = scrollTop + this.readerMainArea.clientHeight / 2;
 
     pageElements.forEach((el, idx) => {
       const top = el.offsetTop;
@@ -178,19 +218,85 @@ window.ReaderComponent = class ReaderComponent {
       }
     });
 
-    this.currentPageIndex = currentIdx;
-    this.updatePageCounter();
+    if (this.currentPageIndex !== currentIdx) {
+      this.currentPageIndex = currentIdx;
+      this.updatePageCounter();
+    }
   }
 
   updateProgressUI() {
+    if (this.sidebarChapterSubtitle && this.currentChapter) {
+      this.sidebarChapterSubtitle.textContent = this.currentChapter.title;
+    }
+    this.populatePageDropdown();
     this.updatePageCounter();
+    this.renderComments();
+  }
+
+  populatePageDropdown() {
+    if (!this.readerPageSelect) return;
+    const total = this.currentChapter?.pages?.length || 0;
+    this.readerPageSelect.innerHTML = '';
+    
+    for (let i = 0; i < total; i++) {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = `${i + 1} / ${total}`;
+      this.readerPageSelect.appendChild(opt);
+    }
   }
 
   updatePageCounter() {
-    const total = this.currentChapter?.pages?.length || 0;
-    if (this.pageCounter) {
-      this.pageCounter.textContent = `${this.currentPageIndex + 1} / ${total}`;
+    if (this.readerPageSelect) {
+      this.readerPageSelect.value = this.currentPageIndex;
     }
+  }
+
+  renderComments() {
+    if (!this.currentManga || !this.currentChapter) return;
+    const feed = document.getElementById('comments-feed-list');
+    const badge = document.getElementById('comments-count');
+    if (!feed) return;
+
+    const key = `notes_${this.currentManga.id}_${this.currentChapter.id}`;
+    const notes = JSON.parse(localStorage.getItem(key) || '[]');
+    
+    if (badge) badge.textContent = notes.length;
+
+    if (notes.length === 0) {
+      feed.innerHTML = `<div class="empty-feed">Chưa có ghi chú nào cho chương này.</div>`;
+      return;
+    }
+
+    feed.innerHTML = notes.map((c, idx) => `
+      <div class="comment-card-item">
+        <div class="comment-card-header">
+          <span class="comment-card-author"><i class="fas fa-sticky-note"></i> Ghi chú #${notes.length - idx}</span>
+          <span class="comment-card-time">${c.time}</span>
+        </div>
+        <div class="comment-card-text">${c.text}</div>
+      </div>
+    `).join('');
+  }
+
+  submitComment() {
+    const input = document.getElementById('comment-textarea');
+    if (!input || !this.currentManga || !this.currentChapter) return;
+    const text = input.value.trim();
+    if (!text) return;
+
+    const key = `notes_${this.currentManga.id}_${this.currentChapter.id}`;
+    const notes = JSON.parse(localStorage.getItem(key) || '[]');
+
+    const newNote = {
+      text: text,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+
+    notes.unshift(newNote);
+    localStorage.setItem(key, JSON.stringify(notes));
+    input.value = '';
+    this.renderComments();
   }
 
   saveProgress() {
@@ -228,17 +334,34 @@ window.ReaderComponent = class ReaderComponent {
     }
   }
 
+  toggleBookmark() {
+    if (!this.currentManga) return;
+    let bMarks = JSON.parse(localStorage.getItem('manga_bookmarks') || '[]');
+    if (bMarks.includes(this.currentManga.id)) {
+      bMarks = bMarks.filter(id => id !== this.currentManga.id);
+    } else {
+      bMarks.push(this.currentManga.id);
+    }
+    localStorage.setItem('manga_bookmarks', JSON.stringify(bMarks));
+    const btn = document.getElementById('btn-sidebar-bookmark');
+    if (btn) {
+      const isBookmarked = bMarks.includes(this.currentManga.id);
+      btn.innerHTML = `<i class="${isBookmarked ? 'fas' : 'far'} fa-bookmark" style="${isBookmarked ? 'color:#818cf8;' : ''}"></i>`;
+    }
+  }
+
   startAutoScroll() {
     this.autoScrollActive = true;
     const btn = document.getElementById('btn-toggle-autoscroll');
     if (btn) {
       btn.style.color = '#818cf8';
-      btn.innerHTML = '<i class="fas fa-pause"></i>';
+      btn.innerHTML = '<i class="fas fa-pause"></i> Tắt Tự Động Cuộn';
     }
     
     this.autoScrollTimer = setInterval(() => {
-      this.readerWrapper.scrollTop += this.autoScrollSpeed;
-      if (this.readerWrapper.scrollTop + this.readerWrapper.clientHeight >= this.readerWrapper.scrollHeight - 5) {
+      if (!this.readerMainArea) return;
+      this.readerMainArea.scrollTop += this.autoScrollSpeed;
+      if (this.readerMainArea.scrollTop + this.readerMainArea.clientHeight >= this.readerMainArea.scrollHeight - 5) {
         this.stopAutoScroll();
       }
     }, 30);
@@ -253,7 +376,7 @@ window.ReaderComponent = class ReaderComponent {
     const btn = document.getElementById('btn-toggle-autoscroll');
     if (btn) {
       btn.style.color = '';
-      btn.innerHTML = '<i class="fas fa-play"></i>';
+      btn.innerHTML = '<i class="fas fa-play"></i> Bật Tự Động Cuộn';
     }
   }
 
@@ -269,12 +392,6 @@ window.ReaderComponent = class ReaderComponent {
     this.renderPages();
   }
 
-  toggleControls() {
-    this.controlsVisible = !this.controlsVisible;
-    this.readerHeader?.classList.toggle('autohide', !this.controlsVisible);
-    this.readerControls?.classList.toggle('autohide', !this.controlsVisible);
-  }
-
   toggleFullscreen() {
     if (!document.fullscreenElement) {
       this.readerWrapper.requestFullscreen().catch(err => console.log(err));
@@ -285,27 +402,28 @@ window.ReaderComponent = class ReaderComponent {
 
   handleKeyDown(e) {
     if (this.readerWrapper.classList.contains('hidden')) return;
+    if (document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'INPUT') return;
 
     switch (e.key) {
       case 'ArrowDown':
       case 'j':
-        this.readerWrapper.scrollTop += 120;
+        if (this.readerMainArea) this.readerMainArea.scrollTop += 120;
         break;
       case 'ArrowUp':
       case 'k':
-        this.readerWrapper.scrollTop -= 120;
+        if (this.readerMainArea) this.readerMainArea.scrollTop -= 120;
         break;
       case ' ':
         e.preventDefault();
-        this.readerWrapper.scrollTop += window.innerHeight * 0.8;
+        if (this.readerMainArea) this.readerMainArea.scrollTop += window.innerHeight * 0.8;
         break;
       case 'f':
       case 'F':
         this.toggleFullscreen();
         break;
-      case 'h':
-      case 'H':
-        this.toggleControls();
+      case 's':
+      case 'S':
+        this.toggleSidebar();
         break;
     }
   }

@@ -70,56 +70,124 @@
 
   </main>
 
-  <!-- Fullscreen Immersive Reader Component -->
+  <!-- Fullscreen Immersive Reader Component with Control Sidebar -->
   <div id="reader-wrapper" class="reader-wrapper hidden">
     
-    <!-- Top Reader Header Bar -->
-    <div id="reader-header" class="reader-header">
-      <div class="reader-title-group">
-        <button id="btn-close-reader" class="btn-icon" title="Thoát trình đọc (Esc)"><i class="fas fa-arrow-left"></i></button>
-        <span id="reader-manga-title" style="font-weight: 700; font-family: 'Outfit', sans-serif;">DriveManga</span>
-      </div>
-
-      <div style="display: flex; align-items: center; gap: 1rem;">
-        <select id="reader-chapter-select" style="padding: 6px 14px; font-size: 0.85rem;">
-          <!-- Dynamically populated -->
-        </select>
-        <div id="page-counter" class="badge">1 / 1</div>
-      </div>
-    </div>
-
-    <!-- Progress Indicator Bar -->
-    <div style="position: fixed; top: 64px; left: 0; right: 0; height: 3px; background: rgba(255,255,255,0.05); z-index: 1011;">
-      <div id="reader-progress-bar" style="height: 100%; width: 0%; background: var(--accent-gradient); transition: width 0.1s linear;"></div>
-    </div>
-
-    <!-- Reader Image Canvas Container -->
-    <main id="reader-canvas" class="reader-canvas">
-      <!-- Images rendered here -->
-    </main>
-
-    <!-- Floating Bottom Controls Overlay -->
-    <div id="reader-controls" class="reader-controls-bar">
-      <button id="btn-prev-chapter" class="btn-icon" title="Chương trước"><i class="fas fa-chevron-left"></i></button>
+    <!-- Main Scrollable Canvas Area (Left / Center) -->
+    <div id="reader-main-area" class="reader-main-area">
       
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <select id="select-reading-mode" style="padding: 6px 12px; font-size: 0.8rem;" title="Chế độ đọc">
-          <option value="webtoon">📜 Cuộn dọc (Webtoon)</option>
-          <option value="single">📄 Từng trang (Single)</option>
-        </select>
-
-        <select id="select-zoom-level" style="padding: 6px 12px; font-size: 0.8rem;" title="Khung hiển thị">
-          <option value="default">📱 Vừa màn hình (Standard)</option>
-          <option value="wide">💻 Rộng (Wide 1200px)</option>
-          <option value="full">🖥️ Toàn khổ (Full Width)</option>
-        </select>
+      <!-- Top Progress Indicator -->
+      <div class="reader-progress-track">
+        <div id="reader-progress-bar" class="reader-progress-fill"></div>
       </div>
 
-      <button id="btn-toggle-autoscroll" class="btn-icon" title="Tự động cuộn (Auto-scroll)"><i class="fas fa-play"></i></button>
-      <button id="btn-toggle-fullscreen" class="btn-icon" title="Toàn màn hình (F)"><i class="fas fa-expand"></i></button>
+      <!-- Floating Top Header (Quick Back & Title) -->
+      <div id="reader-top-floating" class="reader-top-floating">
+        <button id="btn-close-reader" class="btn-icon" title="Quay lại Thư viện (Esc)"><i class="fas fa-arrow-left"></i></button>
+        <span id="reader-manga-title-top" class="reader-title-top">DriveManga</span>
+        <button id="btn-toggle-sidebar" class="btn-icon" title="Ẩn/Hiện Bảng Điều Khiển (S)"><i class="fas fa-columns"></i></button>
+      </div>
 
-      <button id="btn-next-chapter" class="btn-icon" title="Chương sau"><i class="fas fa-chevron-right"></i></button>
+      <!-- Reader Canvas for PDF Pages or Images -->
+      <main id="reader-canvas" class="reader-canvas">
+        <!-- Rendered Pages Here -->
+      </main>
+
     </div>
+
+    <!-- Right Control & Comments Sidebar Panel (Matching Screenshot UI) -->
+    <aside id="reader-sidebar" class="reader-sidebar">
+      
+      <!-- Sidebar Top Header -->
+      <div class="sidebar-header">
+        <div class="sidebar-manga-info">
+          <h3 id="sidebar-manga-title">Quái vật của lẽ thường</h3>
+          <span id="sidebar-chapter-subtitle" class="sidebar-subtitle">Chương 1</span>
+        </div>
+        <div class="sidebar-header-actions">
+          <button id="btn-sidebar-home" class="btn-icon-sm" title="Trang chủ"><i class="fas fa-home"></i></button>
+          <button id="btn-sidebar-bookmark" class="btn-icon-sm" title="Yêu thích"><i class="far fa-bookmark"></i></button>
+          <button id="btn-sidebar-fullscreen" class="btn-icon-sm" title="Toàn màn hình"><i class="fas fa-expand"></i></button>
+          <button id="btn-collapse-sidebar" class="btn-icon-sm" title="Thu gọn Sidebar"><i class="fas fa-chevron-right"></i></button>
+        </div>
+      </div>
+
+      <!-- Sidebar Scrollable Content Body -->
+      <div class="sidebar-body">
+        
+        <!-- Chapter Control Box -->
+        <div class="sidebar-box">
+          <div class="box-label">ĐIỀU HƯỚNG CHƯƠNG</div>
+          <div class="nav-control-row">
+            <button id="btn-first-chapter" class="btn-nav-square" title="Chương đầu"><i class="fas fa-step-backward"></i></button>
+            <button id="btn-prev-chapter-side" class="btn-nav-square" title="Chương trước"><i class="fas fa-chevron-left"></i></button>
+            <select id="reader-chapter-select" class="sidebar-select"></select>
+            <button id="btn-next-chapter-side" class="btn-nav-square" title="Chương sau"><i class="fas fa-chevron-right"></i></button>
+            <button id="btn-last-chapter" class="btn-nav-square" title="Chương mới nhất"><i class="fas fa-step-forward"></i></button>
+          </div>
+        </div>
+
+        <!-- Page Jump Control Box -->
+        <div class="sidebar-box">
+          <div class="box-label">ĐIỀU HƯỚNG TRANG</div>
+          <div class="nav-control-row">
+            <button id="btn-first-page" class="btn-nav-square" title="Trang đầu"><i class="fas fa-angle-double-left"></i></button>
+            <button id="btn-prev-page" class="btn-nav-square" title="Trang trước"><i class="fas fa-angle-left"></i></button>
+            <select id="reader-page-select" class="sidebar-select"></select>
+            <button id="btn-next-page" class="btn-nav-square" title="Trang sau"><i class="fas fa-angle-right"></i></button>
+            <button id="btn-last-page" class="btn-nav-square" title="Trang cuối"><i class="fas fa-angle-double-right"></i></button>
+          </div>
+        </div>
+
+        <!-- Display Options Box -->
+        <div class="sidebar-box">
+          <div class="box-label">TUỲ CHỈNH HIỂN THỊ</div>
+          <div class="setting-row">
+            <span><i class="fas fa-scroll"></i> Chế độ đọc:</span>
+            <select id="select-reading-mode" class="sidebar-select-sm">
+              <option value="webtoon">📜 Cuộn dọc Webtoon</option>
+              <option value="single">📄 Trang đơn</option>
+            </select>
+          </div>
+          <div class="setting-row" style="margin-top: 10px;">
+            <span><i class="fas fa-search-plus"></i> Khung xem:</span>
+            <select id="select-zoom-level" class="sidebar-select-sm">
+              <option value="default">📱 Vừa màn hình</option>
+              <option value="wide">💻 Rộng (1200px)</option>
+              <option value="full">🖥️ Toàn khổ 100%</option>
+            </select>
+          </div>
+          <div style="margin-top: 12px;">
+            <button id="btn-toggle-autoscroll" class="btn-sidebar-action">
+              <i class="fas fa-play"></i> Bật Tự Động Cuộn
+            </button>
+          </div>
+        </div>
+
+        <!-- Local Chapter Notes Box (Pure Frontend Local Storage) -->
+        <div class="sidebar-box comments-section">
+          <div class="comments-header">
+            <span><i class="fas fa-edit"></i> Ghi chú chương này (<strong id="comments-count">0</strong>)</span>
+          </div>
+
+          <div class="comment-input-box">
+            <textarea id="comment-textarea" placeholder="Nhập ghi chú cá nhân cho chương này..." rows="3"></textarea>
+            <div class="comment-toolbar" style="justify-content: flex-end;">
+              <button id="btn-submit-comment" class="btn-primary" style="padding: 4px 14px; font-size: 0.8rem; border-radius: var(--radius-sm);">
+                <i class="fas fa-save"></i> Lưu Ghi Chú
+              </button>
+            </div>
+          </div>
+
+          <!-- Feed list -->
+          <div id="comments-feed-list" class="comments-feed-list">
+            <div class="empty-feed">Chưa có ghi chú nào cho chương này.</div>
+          </div>
+        </div>
+
+      </div>
+
+    </aside>
 
   </div>
 
