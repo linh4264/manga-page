@@ -23,7 +23,7 @@ window.ImportModalComponent = class ImportModalComponent {
         <form id="import-manga-form">
           <div class="form-group">
             <label>Tên Truyện *</label>
-            <input type="text" id="import-title" placeholder="VD: Solo Leveling (Bản PDF / Drive)" required>
+            <input type="text" id="import-title" placeholder="VD: Solo Leveling (Bản PDF)" required>
           </div>
 
           <div class="form-group">
@@ -33,22 +33,12 @@ window.ImportModalComponent = class ImportModalComponent {
 
           <div class="form-group">
             <label>Thể Loại (phân cách bằng dấu phẩy)</label>
-            <input type="text" id="import-genres" placeholder="VD: Action, Fantasy, PDF, Google Drive">
+            <input type="text" id="import-genres" placeholder="VD: Action, Fantasy, PDF">
           </div>
 
           <div class="form-group">
-            <label>Loại Nguồn Truyện *</label>
-            <select id="import-source-type" style="width: 100%; font-weight: 600;">
-              <option value="images">🖼️ Danh sách nhiều link ảnh Google Drive (Mỗi trang 1 link)</option>
-              <option value="pdf-drive">📂 Tệp PDF duy nhất lưu trên Google Drive (VD: drive.google.com/file/d/.../view)</option>
-              <option value="pdf-link">🌐 Link tệp PDF từ trang web khác (.pdf URL)</option>
-              <option value="pdf-file">📁 Tải tệp PDF trực tiếp từ máy tính</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>Ảnh Bìa (Google Drive Link / File ID / Direct Image URL)</label>
-            <input type="text" id="import-cover" placeholder="Dán link Google Drive hoặc File ID ảnh bìa">
+            <label>Ảnh Bìa (Google Drive Link / Direct Image URL)</label>
+            <input type="text" id="import-cover" placeholder="Dán link Google Drive hoặc URL ảnh bìa">
           </div>
 
           <div class="form-group">
@@ -67,32 +57,11 @@ window.ImportModalComponent = class ImportModalComponent {
             <input type="text" id="import-chapter-title" value="Chương 1: Khởi Đầu" required>
           </div>
 
-          <!-- Container 1: Images Batch -->
-          <div id="source-container-images" class="form-group">
-            <label>Danh Sách Link / File IDs Google Drive Của Các Trang *</label>
-            <textarea id="import-pages-batch" rows="5" placeholder="Dán danh sách đường dẫn Google Drive của các trang ảnh (Mỗi link hoặc ID 1 dòng)..."></textarea>
-            <div class="form-hint" id="drive-parsed-count">Đã tìm thấy: 0 ảnh hợp lệ</div>
-          </div>
-
-          <!-- Container 2: PDF Google Drive Link -->
-          <div id="source-container-pdf-drive" class="form-group hidden">
-            <label>Đường Dẫn Tệp PDF Trên Google Drive *</label>
-            <input type="text" id="import-pdf-drive-url" placeholder="VD: https://drive.google.com/file/d/1BxiMVs0XRA5.../view?usp=sharing">
-            <div class="form-hint">Dán link Google Drive chứa tệp PDF. Đảm bảo cài đặt quyền "Bất kỳ ai có liên kết đều có thể xem".</div>
-          </div>
-
-          <!-- Container 3: PDF Web Link -->
-          <div id="source-container-pdf-link" class="form-group hidden">
-            <label>Đường Dẫn Tệp PDF Online (.pdf URL) *</label>
-            <input type="text" id="import-pdf-url" placeholder="VD: https://example.com/manga.pdf">
-            <div class="form-hint">Hỗ trợ đọc tệp PDF trực tiếp qua PDF.js engine</div>
-          </div>
-
-          <!-- Container 4: Local PDF File -->
-          <div id="source-container-pdf-file" class="form-group hidden">
-            <label>Chọn Tệp PDF Từ Máy Tính *</label>
-            <input type="file" id="import-pdf-file-input" accept=".pdf">
-            <div class="form-hint">Tệp PDF sẽ được tải và đọc trực tiếp trong trình duyệt</div>
+          <!-- PDF Link Only -->
+          <div class="form-group">
+            <label>Đường Dẫn Tệp PDF (Link Google Drive / URL .pdf) *</label>
+            <input type="text" id="import-pdf-url" placeholder="VD: https://drive.google.com/file/d/1BxiMVs0XRA5.../view" required>
+            <div class="form-hint">Dán đường dẫn tệp PDF Google Drive hoặc tệp PDF online</div>
           </div>
 
           <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; gap: 1rem;">
@@ -114,31 +83,7 @@ window.ImportModalComponent = class ImportModalComponent {
     // Event listeners
     document.getElementById('btn-close-import-modal').addEventListener('click', () => this.close());
     document.getElementById('btn-cancel-import').addEventListener('click', () => this.close());
-    document.getElementById('btn-export-catalog').addEventListener('click', () => this.exportCatalogFile());
-    
-    // Toggle source types UI
-    const sourceTypeSelect = document.getElementById('import-source-type');
-    const containerImages = document.getElementById('source-container-images');
-    const containerPdfDrive = document.getElementById('source-container-pdf-drive');
-    const containerPdfLink = document.getElementById('source-container-pdf-link');
-    const containerPdfFile = document.getElementById('source-container-pdf-file');
-
-    sourceTypeSelect.addEventListener('change', () => {
-      const val = sourceTypeSelect.value;
-      containerImages.classList.toggle('hidden', val !== 'images');
-      containerPdfDrive.classList.toggle('hidden', val !== 'pdf-drive');
-      containerPdfLink.classList.toggle('hidden', val !== 'pdf-link');
-      containerPdfFile.classList.toggle('hidden', val !== 'pdf-file');
-    });
-
-    // Live update parsed count for images
-    const pagesTextarea = document.getElementById('import-pages-batch');
-    const countDisplay = document.getElementById('drive-parsed-count');
-    
-    pagesTextarea.addEventListener('input', () => {
-      const ids = window.DriveHelper.parseBatchInput(pagesTextarea.value);
-      countDisplay.textContent = `Đã tìm thấy: ${ids.length} trang ảnh hợp lệ`;
-    });
+    document.getElementById('btn-export-catalog')?.addEventListener('click', () => this.exportCatalogFile());
 
     document.getElementById('import-manga-form').addEventListener('submit', (e) => {
       e.preventDefault();
@@ -163,62 +108,25 @@ window.ImportModalComponent = class ImportModalComponent {
     const description = document.getElementById('import-description').value.trim();
 
     const chapterTitle = document.getElementById('import-chapter-title').value.trim();
-    const sourceType = document.getElementById('import-source-type').value;
+    const pdfUrl = document.getElementById('import-pdf-url').value.trim();
 
-    let chapterPages = [];
-    let pdfUrl = null;
-
-    if (sourceType === 'images') {
-      const pagesInput = document.getElementById('import-pages-batch').value.trim();
-      chapterPages = window.DriveHelper.parseBatchInput(pagesInput);
-      if (chapterPages.length === 0) {
-        alert('Vui lòng dán ít nhất 1 link hoặc File ID Google Drive hợp lệ!');
-        return;
-      }
-    } else if (sourceType === 'pdf-drive') {
-      const rawDriveUrl = document.getElementById('import-pdf-drive-url').value.trim();
-      const fileId = window.DriveHelper.extractFileId(rawDriveUrl);
-      if (!fileId) {
-        alert('Vui lòng dán đường dẫn tệp PDF trên Google Drive hoặc File ID hợp lệ!');
-        return;
-      }
-      pdfUrl = rawDriveUrl;
-      chapterPages = [rawDriveUrl];
-    } else if (sourceType === 'pdf-link') {
-      pdfUrl = document.getElementById('import-pdf-url').value.trim();
-      if (!pdfUrl) {
-        alert('Vui lòng dán URL tệp PDF online hợp lệ!');
-        return;
-      }
-      chapterPages = [pdfUrl];
-    } else if (sourceType === 'pdf-file') {
-      const fileInput = document.getElementById('import-pdf-file-input');
-      if (!fileInput.files || fileInput.files.length === 0) {
-        alert('Vui lòng chọn tệp .pdf từ máy tính của bạn!');
-        return;
-      }
-      const file = fileInput.files[0];
-      // Read local file as Data URL
-      pdfUrl = await new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target.result);
-        reader.readAsDataURL(file);
-      });
-      chapterPages = [pdfUrl];
+    if (!pdfUrl) {
+      alert('Vui lòng dán đường dẫn tệp PDF Google Drive hoặc PDF URL!');
+      return;
     }
 
-    const defaultGenres = sourceType.includes('pdf') ? ['PDF', 'Google Drive', 'Custom'] : ['Google Drive', 'Custom'];
+    const defaultGenres = ['PDF', 'Google Drive'];
 
     const newManga = {
       id: 'custom-' + Date.now(),
       title: title,
-      originalTitle: sourceType.includes('pdf') ? 'PDF Document Manga' : 'Google Drive User Manga',
+      originalTitle: 'PDF Manga',
       author: author,
       artist: author,
       status: 'Hoàn thành',
       coverUrl: coverInput && !window.DriveHelper.extractFileId(coverInput) ? coverInput : '',
       coverDriveId: window.DriveHelper.extractFileId(coverInput) || '',
-      description: description || 'Bộ truyện PDF/Drive được tạo từ tệp người dùng.',
+      description: description || 'Bộ truyện PDF được tạo từ người dùng.',
       genres: genresInput ? genresInput.split(',').map(g => g.trim()) : defaultGenres,
       rating: 5.0,
       views: '1',
@@ -227,9 +135,9 @@ window.ImportModalComponent = class ImportModalComponent {
           id: 'chap-1',
           title: chapterTitle,
           updatedAt: new Date().toISOString().split('T')[0],
-          pages: chapterPages,
+          pages: [pdfUrl],
           pdfUrl: pdfUrl,
-          isPdf: sourceType.includes('pdf')
+          isPdf: true
         }
       ]
     };

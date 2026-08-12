@@ -183,9 +183,14 @@ window.LibraryComponent = class LibraryComponent {
         </div>
         <div class="chapter-grid">
           ${(manga.chapters || []).map(ch => `
-            <div class="chapter-item" data-chapter-id="${ch.id}">
-              <span class="chapter-title-text">${ch.title}</span>
-              <span class="chapter-date"><i class="far fa-clock"></i> ${ch.updatedAt || 'Hôm nay'}</span>
+            <div class="chapter-item" data-chapter-id="${ch.id}" style="display: flex; align-items: center; justify-content: space-between;">
+              <div class="chapter-info-click" style="flex: 1; display: flex; justify-content: space-between; align-items: center; margin-right: 12px; cursor: pointer;">
+                <span class="chapter-title-text">${ch.title}</span>
+                <span class="chapter-date"><i class="far fa-clock"></i> ${ch.updatedAt || 'Hôm nay'}</span>
+              </div>
+              <button class="btn-edit-chapter btn-secondary" data-chapter-id="${ch.id}" style="padding: 4px 10px; font-size: 0.75rem; border-radius: var(--radius-sm);" title="Chỉnh sửa link PDF chương">
+                <i class="fas fa-edit" style="color: #818cf8;"></i> Sửa Link PDF
+              </button>
             </div>
           `).join('')}
         </div>
@@ -220,10 +225,18 @@ window.LibraryComponent = class LibraryComponent {
       this.showDetailView(manga); // Refresh view
     });
 
+    // Chapter item click handlers (read chapter or edit chapter link)
     this.detailContainer.querySelectorAll('.chapter-item').forEach(item => {
-      item.addEventListener('click', () => {
-        const chId = item.dataset.chapterId;
+      const chId = item.dataset.chapterId;
+      const chapterObj = manga.chapters.find(c => c.id === chId);
+
+      item.querySelector('.chapter-info-click')?.addEventListener('click', () => {
         this.onReadChapter(manga, chId);
+      });
+
+      item.querySelector('.btn-edit-chapter')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.state.openEditChapterModal(manga, chapterObj);
       });
     });
   }
