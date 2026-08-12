@@ -28,6 +28,24 @@ class MangaApp {
     }
   }
 
+  async updateManga(mangaObj) {
+    if (window.SheetDatabase && window.SheetDatabase.apiUrl) {
+      await window.SheetDatabase.saveMangaToSheet(mangaObj);
+      alert('✅ Đã thêm chương mới thành công và cập nhật lên Google Sheet!');
+      setTimeout(() => {
+        this.syncGoogleSheetData();
+      }, 1000);
+    } else {
+      alert('⚠️ Bạn chưa kết nối Google Sheet! Vui lòng bấm nút "Kết nối Google Sheet" trên menu để dán Web App URL.');
+    }
+  }
+
+  openAddChapterModal(manga) {
+    if (this.addChapterModalComponent) {
+      this.addChapterModalComponent.open(manga);
+    }
+  }
+
   async init() {
     // Initialize components
     this.readerComponent = new window.ReaderComponent(this);
@@ -43,6 +61,13 @@ class MangaApp {
       (newManga) => {
         this.libraryComponent.renderCatalog();
         this.libraryComponent.showDetailView(newManga);
+      }
+    );
+
+    this.addChapterModalComponent = new window.AddChapterModalComponent(
+      this,
+      (manga, newChapter) => {
+        this.libraryComponent.showDetailView(manga);
       }
     );
 

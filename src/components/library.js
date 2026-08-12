@@ -175,8 +175,11 @@ window.LibraryComponent = class LibraryComponent {
       </div>
 
       <div class="glass-panel chapter-list-section">
-        <div class="chapter-list-header">
-          <h2 class="section-title"><i class="fas fa-list"></i> Danh Sách Chương (${manga.chapters?.length || 0})</h2>
+        <div class="chapter-list-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <h2 class="section-title" style="margin-bottom: 0;"><i class="fas fa-list"></i> Danh Sách Chương (${manga.chapters?.length || 0})</h2>
+          <button id="btn-add-chapter" class="btn-primary" style="font-size: 0.85rem; padding: 6px 14px;">
+            <i class="fas fa-plus-circle"></i> + Thêm Chương Mới
+          </button>
         </div>
         <div class="chapter-grid">
           ${(manga.chapters || []).map(ch => `
@@ -193,6 +196,10 @@ window.LibraryComponent = class LibraryComponent {
     document.getElementById('btn-back-library').addEventListener('click', () => {
       this.detailContainer.classList.add('hidden');
       this.libraryContainer.classList.remove('hidden');
+    });
+
+    document.getElementById('btn-add-chapter')?.addEventListener('click', () => {
+      this.state.openAddChapterModal(manga);
     });
 
     document.getElementById('btn-start-reading').addEventListener('click', () => {
