@@ -134,59 +134,66 @@ window.ReaderComponent = class ReaderComponent {
     const fbContainer = document.getElementById('fb-comments-container');
     if (!fbContainer || !this.currentManga || !this.currentChapter) return;
 
-    let rawUrl = (this.currentChapter.fbCommentUrl || this.currentManga.fbCommentUrl || '').trim();
+    window.currentReaderComponent = this;
 
-    if (!rawUrl) {
+    let targetUrl = (this.currentChapter.fbCommentUrl || this.currentManga.fbCommentUrl || '').trim();
+    let isExternalFb = true;
+
+    if (!targetUrl) {
+      isExternalFb = false;
       if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:') {
-        rawUrl = 'https://www.facebook.com/MidnightLilyVN';
+        targetUrl = 'https://www.facebook.com/MidnightLilyVN';
       } else {
-        // Facebook SDK không đọc được ký tự '#' trong URL, đổi sang query param chuẩn ?manga=...&chap=...
         const cleanOrigin = window.location.protocol + '//' + window.location.host + window.location.pathname;
-        rawUrl = `${cleanOrigin}?manga=${encodeURIComponent(this.currentManga.id)}&chap=${encodeURIComponent(this.currentChapter.id)}`;
+        targetUrl = `${cleanOrigin}?manga=${encodeURIComponent(this.currentManga.id)}&chap=${encodeURIComponent(this.currentChapter.id)}`;
       }
     }
 
     // Tự động chuyển đổi link ảnh Fanpage dạng photo?fbid=XXX sang dạng link Fanpage Posts chuẩn
-    if (rawUrl.includes('facebook.com/photo') && rawUrl.includes('fbid=')) {
+    if (targetUrl.includes('facebook.com/photo') && targetUrl.includes('fbid=')) {
       try {
-        const urlObj = new URL(rawUrl);
+        const urlObj = new URL(targetUrl);
         const fbid = urlObj.searchParams.get('fbid');
         if (fbid) {
-          rawUrl = `https://www.facebook.com/MidnightLilyVN/posts/${fbid}`;
+          targetUrl = `https://www.facebook.com/MidnightLilyVN/posts/${fbid}`;
         }
       } catch (e) {}
     }
 
     // Tự động làm sạch các tham số rác nếu có
     try {
-      if (rawUrl.includes('facebook.com')) {
-        const urlObj = new URL(rawUrl);
+      if (targetUrl.includes('facebook.com')) {
+        const urlObj = new URL(targetUrl);
         urlObj.searchParams.delete('notif_id');
         urlObj.searchParams.delete('notif_t');
         urlObj.searchParams.delete('ref');
         urlObj.searchParams.delete('tracking');
-        rawUrl = urlObj.toString();
+        targetUrl = urlObj.toString();
       }
     } catch (e) {}
 
     fbContainer.innerHTML = `
       <div style="margin-bottom: 6px; min-height: 140px; width: 100%;">
         <div class="fb-comments" 
-             data-href="${rawUrl}" 
+             data-href="${targetUrl}" 
              data-width="100%" 
              data-nposts="5" 
              data-colorscheme="dark">
         </div>
       </div>
-      <a href="${rawUrl}" target="_blank" rel="noopener noreferrer" 
-         style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 8px 12px; background: rgba(0, 132, 255, 0.15); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.3); border-radius: var(--radius-sm); font-size: 0.8rem; text-decoration: none; font-weight: 600; margin-top: 6px;">
-        <i class="fab fa-facebook" style="font-size: 1.05rem;"></i> Mở Luồng Bình Luận Trên Facebook
-      </a>
+      ${isExternalFb ? `
+        <a href="${targetUrl}" target="_blank" rel="noopener noreferrer" 
+           style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 8px 12px; background: rgba(0, 132, 255, 0.15); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.3); border-radius: var(--radius-sm); font-size: 0.8rem; text-decoration: none; font-weight: 600; margin-top: 6px;">
+          <i class="fab fa-facebook" style="font-size: 1.05rem;"></i> Mở Bài Viết Trực Tiếp Trên Facebook
+        </a>
+      ` : ''}
     `;
 
     const triggerParse = () => {
       if (window.FB && window.FB.XFBML) {
-        window.FB.XFBML.parse(document.getElementById('fb-comments-wrapper'));
+        try {
+          window.FB.XFBML.parse(document.getElementById('fb-comments-wrapper'));
+        } catch(err) {}
       }
     };
 
