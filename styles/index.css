@@ -696,14 +696,33 @@ input:focus, select:focus, textarea:focus {
   background: transparent !important;
 }
 
+/* Fixed 100vh Pinning for PDF Mode (Zero Shift / Zero Margin Shift) */
+.reader-wrapper.is-pdf-active .reader-main-area {
+  overflow: hidden !important;
+  height: 100vh !important;
+}
+
 .reader-canvas.is-pdf-mode {
-  margin-top: 0 !important;
-  padding-top: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 100vh !important;
+  min-height: 100vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
 }
 
 .reader-canvas.is-pdf-mode iframe {
+  width: 100% !important;
   height: 100vh !important;
-  margin-top: 0 !important;
+  min-height: 100vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  display: block !important;
 }
 
 

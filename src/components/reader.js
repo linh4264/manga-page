@@ -116,7 +116,10 @@ window.ReaderComponent = class ReaderComponent {
 
   close() {
     this.stopAutoScroll();
-    this.readerWrapper.classList.add('hidden');
+    if (this.readerWrapper) {
+      this.readerWrapper.classList.add('hidden');
+      this.readerWrapper.classList.remove('is-pdf-active');
+    }
     document.body.style.overflow = ''; // Mở lại thanh cuộn chính trang web khi thoát chế độ đọc
     const backdrop = document.getElementById('reader-sidebar-backdrop');
     if (backdrop) backdrop.classList.add('hidden');
@@ -234,6 +237,7 @@ window.ReaderComponent = class ReaderComponent {
 
     // If Chapter source is a PDF file
     if (pdfSource || this.currentChapter.isPdf) {
+      if (this.readerWrapper) this.readerWrapper.classList.add('is-pdf-active');
       this.readerCanvas.className = `reader-canvas ${this.zoomLevel} is-pdf-mode`;
       const source = pdfSource || pages[0];
       window.PdfHelper.renderPdfToContainer(source, this.readerCanvas, (totalPdfPages) => {
@@ -243,6 +247,8 @@ window.ReaderComponent = class ReaderComponent {
         this.updateProgressUI();
       });
       return;
+    } else {
+      if (this.readerWrapper) this.readerWrapper.classList.remove('is-pdf-active');
     }
     
     if (pages.length === 0) {
