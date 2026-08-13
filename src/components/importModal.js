@@ -70,14 +70,14 @@ window.ImportModalComponent = class ImportModalComponent {
             <input type="password" id="import-admin-password" placeholder="Nhập mật khẩu Admin để xác thực..." required>
           </div>
 
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; gap: 1rem;">
-            <button type="button" id="btn-export-catalog" class="btn-secondary" style="font-size: 0.8rem;" title="Tải về file sampleManga.js để đè vào dự án trước khi deploy">
-              <i class="fas fa-download" style="color: #818cf8;"></i> Xuất File Dữ Liệu Để Deploy Web
+          <div class="modal-footer-row">
+            <button type="button" id="btn-export-catalog" class="btn-secondary" title="Tải về file sampleManga.js để đè vào dự án trước khi deploy">
+              <i class="fas fa-download" style="color: #818cf8;"></i> Xuất File Dữ Liệu
             </button>
 
-            <div style="display: flex; gap: 0.75rem;">
+            <div class="modal-footer-actions">
               <button type="button" id="btn-cancel-import" class="btn-secondary">Hủy</button>
-              <button type="submit" class="btn-primary"><i class="fas fa-plus-circle"></i> Thêm Vào Thư Viện</button>
+              <button type="submit" class="btn-primary"><i class="fas fa-plus"></i> Thêm Vào Thư Viện</button>
             </div>
           </div>
         </form>

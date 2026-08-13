@@ -49,9 +49,11 @@ window.AddChapterModalComponent = class AddChapterModalComponent {
             <input type="password" id="add-chap-admin-password" placeholder="Nhập mật khẩu Admin để xác thực..." required>
           </div>
 
-          <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
-            <button type="button" id="btn-cancel-chapter-modal" class="btn-secondary">Hủy</button>
-            <button type="submit" class="btn-primary"><i class="fas fa-plus-circle"></i> Xác Nhận Thêm Chương</button>
+          <div class="modal-footer-row" style="justify-content: flex-end;">
+            <div class="modal-footer-actions" style="width: 100%;">
+              <button type="button" id="btn-cancel-chapter-modal" class="btn-secondary">Hủy</button>
+              <button type="submit" class="btn-primary"><i class="fas fa-plus"></i> Xác Nhận Thêm Chương</button>
+            </div>
           </div>
         </form>
       </div>

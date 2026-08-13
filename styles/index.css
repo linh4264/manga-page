@@ -128,75 +128,155 @@ input:focus, select:focus, textarea:focus {
   border: 1px solid rgba(99, 102, 241, 0.3);
 }
 
-/* Main Layout & Header */
+/* Main Layout & App Header */
 .app-header {
   position: sticky;
   top: 0;
   z-index: 100;
-  height: 72px;
-  padding: 0 2rem;
+  height: 74px;
+  background: rgba(9, 13, 22, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+}
+
+.header-container {
+  max-width: 1320px;
+  width: 100%;
+  margin: 0 auto;
+  height: 100%;
+  padding: 0 1.5rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--bg-glass);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--bg-glass-border);
+  gap: 2rem;
 }
 
 .brand-logo {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Outfit', sans-serif;
   font-weight: 800;
   font-size: 1.4rem;
+  letter-spacing: -0.02em;
+  color: #ffffff;
   cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.brand-logo:hover {
+  transform: scale(1.02);
 }
 
 .brand-logo .logo-icon {
   width: 42px;
   height: 42px;
-  border-radius: var(--radius-md);
-  background: var(--accent-gradient);
+  border-radius: 12px;
+  background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.3rem;
-  box-shadow: var(--shadow-glow);
+  color: #ffffff;
+  box-shadow: 0 0 22px rgba(99, 102, 241, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .brand-logo span {
-  background: var(--accent-gradient);
+  background: linear-gradient(135deg, #a855f7, #ec4899);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-.nav-controls {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
 .search-box {
   position: relative;
-  width: 320px;
+  width: 420px;
+  max-width: 100%;
+  flex-shrink: 1;
 }
 
 .search-box input {
   width: 100%;
-  padding-left: 40px;
-  padding-right: 40px;
+  height: 42px;
+  padding: 0 46px 0 42px;
   border-radius: var(--radius-full);
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  font-size: 0.88rem;
+  transition: all 0.25s ease;
+}
+
+.search-box input::placeholder {
+  color: var(--text-muted);
+}
+
+.search-box input:focus {
+  background: rgba(15, 23, 42, 0.95);
+  border-color: #818cf8;
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.35);
 }
 
 .search-box .search-icon {
   position: absolute;
-  left: 14px;
+  left: 15px;
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-muted);
+  font-size: 0.9rem;
+  pointer-events: none;
+  transition: color 0.2s ease;
+}
+
+.search-shortcut {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.search-shortcut kbd {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  padding: 2px 7px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-family: inherit;
+}
+
+.nav-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.btn-header-app {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: all 0.25s ease;
+  text-decoration: none;
+}
+
+.btn-header-app:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
 }
 
 .btn-primary {
@@ -1208,41 +1288,73 @@ input:focus, select:focus, textarea:focus {
 
 /* Mobile & Tablet Devices (<= 768px) */
 @media (max-width: 768px) {
-  /* Header & Navigation */
+  /* App Header Navigation Bar on Mobile */
   .app-header {
     height: 60px;
-    padding: 0 12px;
+    padding: 0 10px;
+  }
+
+  .header-container {
+    padding: 0;
     gap: 8px;
   }
 
   .brand-logo {
-    font-size: 1.15rem;
-  }
-
-  /* Top App Navigation Header Bar on Mobile */
-  .app-header {
-    padding: 0 10px;
-    height: 60px;
-  }
-
-  .brand-logo {
-    font-size: 1.1rem;
+    font-size: 1.08rem;
     gap: 6px;
+    flex-shrink: 0;
   }
 
-  .brand-logo i {
-    font-size: 1.2rem;
+  .brand-logo .logo-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    box-shadow: 0 0 12px rgba(99, 102, 241, 0.4);
   }
 
   .search-box {
     flex: 1;
-    max-width: 140px;
+    min-width: 0;
     height: 36px;
-    padding: 0 8px;
   }
 
   .search-box input {
+    height: 36px;
+    padding: 0 10px 0 32px;
     font-size: 0.78rem;
+    border-radius: var(--radius-full);
+  }
+
+  .search-shortcut,
+  .btn-header-app {
+    display: none !important;
+  }
+
+  .search-box .search-icon {
+    left: 10px;
+    font-size: 0.8rem;
+  }
+
+  .nav-controls {
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .nav-controls .btn-primary {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    box-shadow: 0 0 12px rgba(99, 102, 241, 0.4);
+  }
+
+  .nav-controls .btn-primary span {
+    display: none !important;
   }
 
   .nav-controls {
@@ -1604,6 +1716,41 @@ input:focus, select:focus, textarea:focus {
 
   .modal-header h2 {
     font-size: 1.15rem;
+  }
+
+  /* Modal Footer Row Responsiveness on Mobile */
+  .modal-footer-row {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 10px;
+    align-items: stretch;
+    margin-top: 1.25rem;
+  }
+
+  .modal-footer-actions {
+    display: flex;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .modal-footer-actions button,
+  .modal-footer-row button {
+    flex: 1;
+    width: 100% !important;
+    justify-content: center;
+    padding: 10px 14px;
+    font-size: 0.85rem;
+    border-radius: var(--radius-full) !important;
+    white-space: normal;
+    text-align: center;
+    height: auto !important;
+    min-height: 42px;
+  }
+
+  .modal-footer-row #btn-export-catalog {
+    width: 100% !important;
+    font-size: 0.78rem;
+    padding: 8px 12px;
   }
 
   /* Form Controls Touch Target Optimization (Prevent iOS Zoom) */
