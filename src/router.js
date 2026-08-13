@@ -83,6 +83,7 @@ window.AppRouter = class AppRouter {
 
     if (parts.length === 0) {
       // Route / -> Show Catalog
+      document.body.style.overflow = ''; // Mở lại thanh cuộn chính của trang web
       document.getElementById('reader-wrapper')?.classList.add('hidden');
       document.getElementById('detail-view')?.classList.add('hidden');
       document.getElementById('library-view')?.classList.remove('hidden');
@@ -98,6 +99,7 @@ window.AppRouter = class AppRouter {
     if (!targetManga) {
       // Manga not found -> fallback to Home
       console.warn(`Không tìm thấy bộ truyện có ID: ${mangaId}`);
+      document.body.style.overflow = '';
       document.getElementById('detail-view')?.classList.add('hidden');
       document.getElementById('library-view')?.classList.remove('hidden');
       return;
@@ -105,6 +107,7 @@ window.AppRouter = class AppRouter {
 
     if (parts.length === 1) {
       // Route /:id -> Show Detail View
+      document.body.style.overflow = ''; // Mở lại thanh cuộn chính của trang web
       document.getElementById('reader-wrapper')?.classList.add('hidden');
       document.getElementById('library-view')?.classList.add('hidden');
       document.getElementById('detail-view')?.classList.remove('hidden');

@@ -65,11 +65,6 @@ window.ReaderComponent = class ReaderComponent {
     // Handle Keyboard Hotkeys
     window.addEventListener('keydown', (e) => this.handleKeyDown(e));
 
-    // Prohibit manual wheel and touch scrolling in reader mode
-    this.readerMainArea?.addEventListener('wheel', (e) => {
-      e.preventDefault();
-    }, { passive: false });
-
     // Handle Scroll for Webtoon Progress & Page tracking
     this.readerMainArea?.addEventListener('scroll', () => this.handleScroll());
   }
@@ -95,13 +90,13 @@ window.ReaderComponent = class ReaderComponent {
 
     this.loadChapter(chapterId);
     this.readerWrapper.classList.remove('hidden');
-    document.body.style.overflow = 'hidden'; // Lock background scroll
+    document.body.style.overflow = 'hidden'; // Chỉ ẩn thanh cuộn body ngoài khi ĐANG ĐỌC CHƯƠNG
   }
 
   close() {
     this.stopAutoScroll();
     this.readerWrapper.classList.add('hidden');
-    document.body.style.overflow = '';
+    document.body.style.overflow = ''; // Mở lại thanh cuộn chính trang web khi thoát chế độ đọc
 
     if (this.state?.router && this.currentManga) {
       this.state.router.goManga(this.currentManga.id);

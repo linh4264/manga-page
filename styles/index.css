@@ -630,16 +630,14 @@ input:focus, select:focus, textarea:focus {
 .reader-main-area {
   flex: 1;
   height: 100vh;
-  overflow: hidden !important; /* Cấm thanh cuộn */
+  overflow-y: auto !important;
   position: relative;
   scroll-behavior: smooth;
-  scrollbar-width: none !important;
-  -ms-overflow-style: none !important;
 }
 
-.reader-main-area::-webkit-scrollbar,
-.reader-wrapper::-webkit-scrollbar,
-.reader-sidebar::-webkit-scrollbar,
+/* Giấu thanh cuộn rườm rà CHỈ TRONG KHU VỰC ĐỌC CHƯƠNG */
+#reader-main-area::-webkit-scrollbar,
+#reader-sidebar::-webkit-scrollbar,
 .sidebar-body::-webkit-scrollbar {
   display: none !important;
   width: 0 !important;
@@ -669,32 +667,6 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* Floating Top Controls (Quick Back Button Only) */
-.reader-top-floating {
-  position: fixed;
-  top: 16px;
-  left: 24px;
-  z-index: 1020;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(15, 23, 42, 0.85);
-  backdrop-filter: blur(16px);
-  padding: 4px;
-  border-radius: var(--radius-full);
-  border: 1px solid var(--bg-glass-border);
-  box-shadow: var(--shadow-lg);
-  transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-.reader-title-top {
-  font-family: 'Outfit', sans-serif;
-  font-weight: 700;
-  font-size: 0.95rem;
-  max-width: 300px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 
 /* Canvas Override */
 .reader-canvas {
