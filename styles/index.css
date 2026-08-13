@@ -1423,6 +1423,18 @@ input:focus, select:focus, textarea:focus {
     box-shadow: -10px 0 35px rgba(0, 0, 0, 0.85);
   }
 
+  .reader-sidebar-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+    z-index: 1050;
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
   .reader-wrapper.sidebar-collapsed .reader-sidebar {
     margin-right: -100%;
   }

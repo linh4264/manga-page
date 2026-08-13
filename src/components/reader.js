@@ -32,6 +32,7 @@ window.ReaderComponent = class ReaderComponent {
     document.getElementById('btn-toggle-sidebar')?.addEventListener('click', () => this.toggleSidebar());
     document.getElementById('btn-collapse-sidebar')?.addEventListener('click', () => this.toggleSidebar());
     document.getElementById('btn-expand-sidebar')?.addEventListener('click', () => this.toggleSidebar());
+    document.getElementById('reader-sidebar-backdrop')?.addEventListener('click', () => this.toggleSidebar(true));
     document.getElementById('btn-sidebar-fullscreen')?.addEventListener('click', () => this.toggleFullscreen());
     document.getElementById('btn-sidebar-bookmark')?.addEventListener('click', () => this.toggleBookmark());
 
@@ -69,6 +70,21 @@ window.ReaderComponent = class ReaderComponent {
     this.readerMainArea?.addEventListener('scroll', () => this.handleScroll());
   }
 
+  toggleSidebar(forceCollapse = null) {
+    if (!this.readerWrapper) return;
+    const backdrop = document.getElementById('reader-sidebar-backdrop');
+    const isCollapsed = this.readerWrapper.classList.contains('sidebar-collapsed');
+    const shouldCollapse = forceCollapse !== null ? forceCollapse : !isCollapsed;
+
+    if (shouldCollapse) {
+      this.readerWrapper.classList.add('sidebar-collapsed');
+      if (backdrop) backdrop.classList.add('hidden');
+    } else {
+      this.readerWrapper.classList.remove('sidebar-collapsed');
+      if (backdrop) backdrop.classList.remove('hidden');
+    }
+  }
+
   open(manga, chapterId, pushState = true) {
     if (pushState && this.state?.router) {
       this.state.router.goChapter(manga.id, chapterId);
@@ -91,12 +107,19 @@ window.ReaderComponent = class ReaderComponent {
     this.loadChapter(chapterId);
     this.readerWrapper.classList.remove('hidden');
     document.body.style.overflow = 'hidden'; // Chỉ ẩn thanh cuộn body ngoài khi ĐANG ĐỌC CHƯƠNG
+
+    // Tự động thu gọn Sidebar trên điện thoại khi mở đọc chương
+    if (window.innerWidth <= 768) {
+      this.toggleSidebar(true);
+    }
   }
 
   close() {
     this.stopAutoScroll();
     this.readerWrapper.classList.add('hidden');
     document.body.style.overflow = ''; // Mở lại thanh cuộn chính trang web khi thoát chế độ đọc
+    const backdrop = document.getElementById('reader-sidebar-backdrop');
+    if (backdrop) backdrop.classList.add('hidden');
 
     if (this.state?.router && this.currentManga) {
       this.state.router.goManga(this.currentManga.id);
@@ -123,6 +146,11 @@ window.ReaderComponent = class ReaderComponent {
     this.readerWrapper.scrollTop = 0;
     this.updateProgressUI();
     this.updateFacebookComments();
+
+    // Tự động đóng Sidebar trên mobile khi đổi sang chương mới
+    if (window.innerWidth <= 768) {
+      setTimeout(() => this.toggleSidebar(true), 300);
+    }
   }
 
   updateFacebookComments() {
