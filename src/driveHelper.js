@@ -53,20 +53,21 @@ window.DriveHelper = {
 
   /**
    * Get direct displayable image URLs for a Google Drive File ID.
-   * Returns primary CDN link and alternative fallback links.
+   * Returns primary CDN link and alternative fallback links (including WebP-friendly thumbnail endpoint).
    * @param {string} fileId 
    * @param {number} [width] Optional width target for thumbnail optimization (e.g. 500 for covers)
-   * @returns {{ primary: string, fallback1: string, fallback2: string }}
+   * @returns {{ primary: string, fallback1: string, fallback2: string, fallback3: string }}
    */
   getImageUrls(fileId, width = null) {
-    if (!fileId) return { primary: '', fallback1: '', fallback2: '' };
+    if (!fileId) return { primary: '', fallback1: '', fallback2: '', fallback3: '' };
     const cleanId = this.extractFileId(fileId) || fileId;
     const sizeParam = width ? `=w${width}` : '';
-    const szParam = width ? `&sz=w${width}` : '&sz=w1920';
+    const szParam = width ? `&sz=w${width}` : '&sz=w1000';
     return {
       primary: `https://lh3.googleusercontent.com/d/${cleanId}${sizeParam}`,
-      fallback1: `https://drive.google.com/uc?export=view&id=${cleanId}`,
-      fallback2: `https://drive.google.com/thumbnail?id=${cleanId}${szParam}`
+      fallback1: `https://drive.google.com/thumbnail?id=${cleanId}${szParam}`,
+      fallback2: `https://drive.google.com/uc?export=view&id=${cleanId}`,
+      fallback3: `https://drive.google.com/uc?export=download&id=${cleanId}`
     };
   },
 
@@ -89,6 +90,8 @@ window.DriveHelper = {
       } else if (attempt === 2) {
         imgElement.src = urls.fallback2;
       } else if (attempt === 3) {
+        imgElement.src = urls.fallback3;
+      } else if (attempt === 4) {
         imgElement.onerror = null;
         // Display placeholder or broken image indicator
         imgElement.classList.add('img-load-error');

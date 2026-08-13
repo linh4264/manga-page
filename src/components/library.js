@@ -160,8 +160,11 @@ window.LibraryComponent = class LibraryComponent {
       </button>
 
       <div class="glass-panel detail-header-card">
-        <div class="detail-cover">
+        <div class="detail-cover" id="detail-cover-clickable" style="cursor: pointer; position: relative;" title="Bấm để thay đổi ảnh bìa">
           <img src="${coverSrc || 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=600&auto=format&fit=crop&q=80'}" alt="${manga.title}">
+          <div style="position: absolute; bottom: 8px; right: 8px; background: rgba(15, 23, 42, 0.85); color: #a5b4fc; padding: 4px 8px; border-radius: var(--radius-sm); font-size: 0.72rem; border: 1px solid rgba(255, 255, 255, 0.15);">
+            <i class="fas fa-camera"></i> Đổi ảnh
+          </div>
         </div>
         <div class="detail-info">
           <h1>${manga.title}</h1>
@@ -176,6 +179,9 @@ window.LibraryComponent = class LibraryComponent {
           <div class="detail-actions">
             <button id="btn-start-reading" class="btn-primary">
               <i class="fas fa-book-open"></i> ${lastRead ? 'Đọc tiếp (' + lastRead.chapterTitle + ')' : 'Đọc từ chương 1'}
+            </button>
+            <button id="btn-edit-manga-cover" class="btn-secondary" title="Thay đổi ảnh bìa hoặc sửa thông tin truyện">
+              <i class="fas fa-image" style="color: #a855f7;"></i> Đổi Ảnh Bìa
             </button>
             <button id="btn-toggle-bookmark" class="btn-secondary">
               <i class="${isBookmarked ? 'fas' : 'far'} fa-bookmark" style="${isBookmarked ? 'color: #818cf8;' : ''}"></i>
@@ -208,6 +214,13 @@ window.LibraryComponent = class LibraryComponent {
       </div>
     `;
 
+    // Bind event listener to detail cover image fallback
+    const detailCoverImg = this.detailContainer.querySelector('#detail-cover-clickable img');
+    const coverFileId = manga.coverDriveId || DriveHelper.extractFileId(manga.coverUrl);
+    if (detailCoverImg && coverFileId) {
+      DriveHelper.attachImageFallback(detailCoverImg, coverFileId, 600);
+    }
+
     // Event handlers for detail view buttons
     document.getElementById('btn-back-library').addEventListener('click', () => {
       if (this.state?.router) {
@@ -220,6 +233,14 @@ window.LibraryComponent = class LibraryComponent {
 
     document.getElementById('btn-add-chapter')?.addEventListener('click', () => {
       this.state.openAddChapterModal(manga);
+    });
+
+    document.getElementById('btn-edit-manga-cover')?.addEventListener('click', () => {
+      this.state.openEditMangaModal(manga);
+    });
+
+    document.getElementById('detail-cover-clickable')?.addEventListener('click', () => {
+      this.state.openEditMangaModal(manga);
     });
 
     document.getElementById('btn-start-reading').addEventListener('click', () => {

@@ -57,6 +57,12 @@ class MangaApp {
     }
   }
 
+  openEditMangaModal(manga) {
+    if (this.editMangaModalComponent) {
+      this.editMangaModalComponent.open(manga);
+    }
+  }
+
   async init() {
     // Initialize components
     this.readerComponent = new window.ReaderComponent(this);
@@ -86,6 +92,14 @@ class MangaApp {
       this,
       (manga, updatedChapter) => {
         this.libraryComponent.showDetailView(manga);
+      }
+    );
+
+    this.editMangaModalComponent = new window.EditMangaModalComponent(
+      this,
+      (updatedManga) => {
+        this.libraryComponent.renderCatalog();
+        this.libraryComponent.showDetailView(updatedManga);
       }
     );
 

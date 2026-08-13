@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
+  <meta name="google-site-verification" content="oogle901e9be60089751c" />
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DriveManga - Web Đọc Truyện Tranh Google Drive</title>
-  <meta name="description" content="Trang web đọc truyện tranh online cao cấp hỗ trợ đọc trực tiếp từ nguồn ảnh Google Drive với tốc độ cao, chế độ cuộn Webtoon và giao diện Glassmorphism hiện đại.">
-  
+  <meta name="description"
+    content="Trang web đọc truyện tranh online cao cấp hỗ trợ đọc trực tiếp từ nguồn ảnh Google Drive với tốc độ cao, chế độ cuộn Webtoon và giao diện Glassmorphism hiện đại.">
+
   <!-- Resource Preconnect Hints for Maximum Speed -->
   <link rel="preconnect" href="https://lh3.googleusercontent.com">
   <link rel="preconnect" href="https://drive.google.com">
@@ -15,21 +18,25 @@
   <!-- Google Fonts: Be Vietnam Pro & Plus Jakarta Sans (100% Tiếng Việt chuẩn) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"
+    rel="stylesheet">
 
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
+
   <!-- Facebook OpenGraph Meta Tags for Rich Social Sharing Cards -->
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="DriveManga">
   <meta property="og:title" content="DriveManga - Đọc Truyện Tranh Google Drive Tốc Độ Cao">
-  <meta property="og:description" content="Trang web đọc truyện tranh online tốc độ cao từ Google Drive với chế độ Webtoon và giao diện Glassmorphism hiện đại.">
+  <meta property="og:description"
+    content="Trang web đọc truyện tranh online tốc độ cao từ Google Drive với chế độ Webtoon và giao diện Glassmorphism hiện đại.">
   <meta property="og:url" content="https://drive-manga.pages.dev">
 
   <!-- Stylesheet -->
   <link rel="stylesheet" href="styles/index.css">
 </head>
+
 <body>
 
   <!-- Top App Navigation Bar -->
@@ -47,10 +54,12 @@
       </div>
 
       <div class="nav-controls">
-        <a href="https://manga-translator-studio.pages.dev/" target="_blank" rel="noopener noreferrer" class="btn-header-app" title="App Dịch Truyện Manga Translator Studio">
+        <a href="https://manga-translator-studio.pages.dev/" target="_blank" rel="noopener noreferrer"
+          class="btn-header-app" title="App Dịch Truyện Manga Translator Studio">
           <i class="fas fa-magic" style="color: #fb7185;"></i> <span>App Dịch Truyện</span>
         </a>
-        <button class="btn-secondary hidden" id="btn-open-config-sheet" style="display: none;" title="Cấu hình Google Sheets Database">
+        <button class="btn-secondary hidden" id="btn-open-config-sheet" style="display: none;"
+          title="Cấu hình Google Sheets Database">
           <i class="fas fa-table" style="color: #34A853;"></i> <span>Kết nối Google Sheet</span>
         </button>
         <button class="btn-primary" id="btn-open-import" title="Thêm Truyện Drive Mới">
@@ -69,20 +78,24 @@
       <div class="hero-banner">
         <div class="hero-content">
           <!-- Prominent Link to Manga Translator Studio App -->
-          <a href="https://manga-translator-studio.pages.dev/" target="_blank" rel="noopener noreferrer" class="hero-app-link-badge">
+          <a href="https://manga-translator-studio.pages.dev/" target="_blank" rel="noopener noreferrer"
+            class="hero-app-link-badge">
             <i class="fas fa-wand-magic-sparkles" style="color: #fb7185;"></i>
             <span>Truyện được edit bởi <strong>Manga Translator Studio</strong> — Bấm để sử dụng App</span>
             <i class="fas fa-arrow-right icon-arrow"></i>
           </a>
 
           <h1>Nền Tảng Đọc Truyện Tranh Tải Trực Tiếp Từ Drive</h1>
-          <p>Tự do trải nghiệm hàng trăm bộ manga, manhwa chất lượng cao hoặc dán liên kết Google Drive để bắt đầu đọc ngay lập tức.</p>
-          
+          <p>Tự do trải nghiệm hàng trăm bộ manga, manhwa chất lượng cao hoặc dán liên kết Google Drive để bắt đầu đọc
+            ngay lập tức.</p>
+
           <div class="hero-cta-group">
-            <button class="btn-primary" onclick="document.getElementById('manga-grid').scrollIntoView({behavior: 'smooth'})">
+            <button class="btn-primary"
+              onclick="document.getElementById('manga-grid').scrollIntoView({behavior: 'smooth'})">
               <i class="fas fa-book-open"></i> Khám Phá Thư Viện
             </button>
-            <a href="https://manga-translator-studio.pages.dev/" target="_blank" rel="noopener noreferrer" class="btn-hero-app">
+            <a href="https://manga-translator-studio.pages.dev/" target="_blank" rel="noopener noreferrer"
+              class="btn-hero-app">
               <i class="fas fa-magic"></i> Truy Cập App Dịch Truyện
             </a>
           </div>
@@ -112,10 +125,10 @@
 
   <!-- Fullscreen Immersive Reader Component with Control Sidebar -->
   <div id="reader-wrapper" class="reader-wrapper hidden">
-    
+
     <!-- Main Scrollable Canvas Area (Left / Center) -->
     <div id="reader-main-area" class="reader-main-area">
-      
+
       <!-- Top Progress Indicator -->
       <div class="reader-progress-track">
         <div id="reader-progress-bar" class="reader-progress-fill"></div>
@@ -139,7 +152,7 @@
 
     <!-- Right Control & Comments Sidebar Panel (Matching Screenshot UI) -->
     <aside id="reader-sidebar" class="reader-sidebar">
-      
+
       <!-- Sidebar Top Header -->
       <div class="sidebar-header">
         <div class="sidebar-manga-info">
@@ -148,24 +161,31 @@
         </div>
         <div class="sidebar-header-actions">
           <button id="btn-sidebar-home" class="btn-icon-sm" title="Trang chủ"><i class="fas fa-home"></i></button>
-          <button id="btn-sidebar-bookmark" class="btn-icon-sm" title="Yêu thích"><i class="far fa-bookmark"></i></button>
-          <button id="btn-sidebar-fullscreen" class="btn-icon-sm" title="Toàn màn hình"><i class="fas fa-expand"></i></button>
-          <button id="btn-collapse-sidebar" class="btn-icon-sm" title="Thu gọn Sidebar"><i class="fas fa-chevron-right"></i></button>
+          <button id="btn-sidebar-bookmark" class="btn-icon-sm" title="Yêu thích"><i
+              class="far fa-bookmark"></i></button>
+          <button id="btn-sidebar-fullscreen" class="btn-icon-sm" title="Toàn màn hình"><i
+              class="fas fa-expand"></i></button>
+          <button id="btn-collapse-sidebar" class="btn-icon-sm" title="Thu gọn Sidebar"><i
+              class="fas fa-chevron-right"></i></button>
         </div>
       </div>
 
       <!-- Sidebar Scrollable Content Body -->
       <div class="sidebar-body">
-        
+
         <!-- Chapter Control Box -->
         <div class="sidebar-box">
           <div class="box-label">ĐIỀU HƯỚNG CHƯƠNG</div>
           <div class="nav-control-row">
-            <button id="btn-first-chapter" class="btn-nav-square" title="Chương đầu"><i class="fas fa-step-backward"></i></button>
-            <button id="btn-prev-chapter-side" class="btn-nav-square" title="Chương trước"><i class="fas fa-chevron-left"></i></button>
+            <button id="btn-first-chapter" class="btn-nav-square" title="Chương đầu"><i
+                class="fas fa-step-backward"></i></button>
+            <button id="btn-prev-chapter-side" class="btn-nav-square" title="Chương trước"><i
+                class="fas fa-chevron-left"></i></button>
             <select id="reader-chapter-select" class="sidebar-select"></select>
-            <button id="btn-next-chapter-side" class="btn-nav-square" title="Chương sau"><i class="fas fa-chevron-right"></i></button>
-            <button id="btn-last-chapter" class="btn-nav-square" title="Chương mới nhất"><i class="fas fa-step-forward"></i></button>
+            <button id="btn-next-chapter-side" class="btn-nav-square" title="Chương sau"><i
+                class="fas fa-chevron-right"></i></button>
+            <button id="btn-last-chapter" class="btn-nav-square" title="Chương mới nhất"><i
+                class="fas fa-step-forward"></i></button>
           </div>
         </div>
 
@@ -173,21 +193,28 @@
 
         <!-- Interactive Comments & Facebook Viral Share Section -->
         <div class="sidebar-box comments-section">
-          <div class="box-label" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <div class="box-label"
+            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
             <span><i class="fab fa-facebook-messenger" style="color: #1877F2;"></i> BÌNH LUẬN & TƯƠNG TÁC</span>
-            <button id="btn-share-facebook-chapter" class="btn-secondary" style="padding: 3px 10px; font-size: 0.72rem; border-radius: var(--radius-full); background: rgba(24, 119, 242, 0.2); color: #60a5fa; border: 1px solid rgba(24, 119, 242, 0.4);" title="Chia sẻ chương này lên Facebook để kéo tương tác">
+            <button id="btn-share-facebook-chapter" class="btn-secondary"
+              style="padding: 3px 10px; font-size: 0.72rem; border-radius: var(--radius-full); background: rgba(24, 119, 242, 0.2); color: #60a5fa; border: 1px solid rgba(24, 119, 242, 0.4);"
+              title="Chia sẻ chương này lên Facebook để kéo tương tác">
               <i class="fab fa-facebook-f"></i> Share FB
             </button>
           </div>
 
           <div class="comment-input-box">
-            <input type="text" id="comment-author-name" placeholder="Tên của bạn (VD: Linh, Admin...)" style="margin-bottom: 6px; font-size: 0.8rem; padding: 6px 10px; width: 100%;">
+            <input type="text" id="comment-author-name" placeholder="Tên của bạn (VD: Linh, Admin...)"
+              style="margin-bottom: 6px; font-size: 0.8rem; padding: 6px 10px; width: 100%;">
             <textarea id="comment-textarea" placeholder="Viết bình luận cảm nhận chương này..." rows="3"></textarea>
-            <div class="comment-toolbar" style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
-              <button id="btn-share-fb-action" type="button" class="btn-secondary" style="padding: 4px 10px; font-size: 0.75rem; border-radius: var(--radius-sm); color: #60a5fa; background: rgba(24, 119, 242, 0.15);">
+            <div class="comment-toolbar"
+              style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+              <button id="btn-share-fb-action" type="button" class="btn-secondary"
+                style="padding: 4px 10px; font-size: 0.75rem; border-radius: var(--radius-sm); color: #60a5fa; background: rgba(24, 119, 242, 0.15);">
                 <i class="fab fa-facebook"></i> Chia sẻ FB
               </button>
-              <button id="btn-submit-comment" class="btn-primary" style="padding: 5px 14px; font-size: 0.8rem; border-radius: var(--radius-sm);">
+              <button id="btn-submit-comment" class="btn-primary"
+                style="padding: 5px 14px; font-size: 0.8rem; border-radius: var(--radius-sm);">
                 <i class="fas fa-paper-plane"></i> Gửi Bình Luận
               </button>
             </div>
@@ -208,7 +235,7 @@
   <!-- Facebook SDK for Facebook Comments Plugin -->
   <div id="fb-root"></div>
   <script>
-    window.fbAsyncInit = function() {
+    window.fbAsyncInit = function () {
       if (window.FB) {
         window.FB.init({
           xfbml: true,
@@ -220,7 +247,8 @@
       }
     };
   </script>
-  <script async defer crossorigin="anonymous" src="https://connect.facebook.net/vi_VN/sdk.js#xfbml=1&version=v18.0"></script>
+  <script async defer crossorigin="anonymous"
+    src="https://connect.facebook.net/vi_VN/sdk.js#xfbml=1&version=v18.0"></script>
 
   <!-- PDF.js CDN Library for Client-Side PDF Rendering -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -235,7 +263,9 @@
   <script src="src/components/importModal.js"></script>
   <script src="src/components/addChapterModal.js"></script>
   <script src="src/components/editChapterModal.js"></script>
+  <script src="src/components/editMangaModal.js"></script>
   <script src="src/router.js"></script>
   <script src="src/app.js"></script>
 </body>
+
 </html>
