@@ -13,6 +13,15 @@
 
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Facebook OpenGraph Meta Tags for Rich Social Sharing Cards -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="DriveManga">
+  <meta property="og:title" content="DriveManga - Đọc Truyện Tranh Google Drive Tốc Độ Cao">
+  <meta property="og:description" content="Trang web đọc truyện tranh online tốc độ cao từ Google Drive với chế độ Webtoon và giao diện Glassmorphism hiện đại.">
+  <meta property="og:image" content="https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1200&auto=format&fit=crop&q=80">
+  <meta property="og:url" content="https://drive-manga.pages.dev">
+
   <!-- Stylesheet -->
   <link rel="stylesheet" href="styles/index.css">
 </head>
@@ -157,32 +166,31 @@
 
 
 
-        <!-- Facebook Comments Box (Dynamic Per Chapter) -->
+        <!-- Interactive Comments & Facebook Viral Share Section -->
         <div class="sidebar-box comments-section">
-          <div class="box-label"><i class="fab fa-facebook-messenger" style="color: #0084FF;"></i> BÌNH LUẬN FACEBOOK CHƯƠNG</div>
-          <div id="fb-comments-wrapper" style="background: rgba(15, 23, 42, 0.75); border: 1px solid var(--bg-glass-border); border-radius: var(--radius-sm); padding: 8px; overflow: hidden; min-height: 180px;">
-            <div id="fb-comments-container"></div>
-          </div>
-        </div>
-
-        <!-- Local Chapter Notes Box (Pure Frontend Local Storage) -->
-        <div class="sidebar-box comments-section">
-          <div class="comments-header">
-            <span><i class="fas fa-edit"></i> Ghi chú chương này (<strong id="comments-count">0</strong>)</span>
+          <div class="box-label" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span><i class="fab fa-facebook-messenger" style="color: #1877F2;"></i> BÌNH LUẬN & TƯƠNG TÁC</span>
+            <button id="btn-share-facebook-chapter" class="btn-secondary" style="padding: 3px 10px; font-size: 0.72rem; border-radius: var(--radius-full); background: rgba(24, 119, 242, 0.2); color: #60a5fa; border: 1px solid rgba(24, 119, 242, 0.4);" title="Chia sẻ chương này lên Facebook để kéo tương tác">
+              <i class="fab fa-facebook-f"></i> Share FB
+            </button>
           </div>
 
           <div class="comment-input-box">
-            <textarea id="comment-textarea" placeholder="Nhập ghi chú cá nhân cho chương này..." rows="3"></textarea>
-            <div class="comment-toolbar" style="justify-content: flex-end;">
-              <button id="btn-submit-comment" class="btn-primary" style="padding: 4px 14px; font-size: 0.8rem; border-radius: var(--radius-sm);">
-                <i class="fas fa-save"></i> Lưu Ghi Chú
+            <input type="text" id="comment-author-name" placeholder="Tên của bạn (VD: Linh, Admin...)" style="margin-bottom: 6px; font-size: 0.8rem; padding: 6px 10px; width: 100%;">
+            <textarea id="comment-textarea" placeholder="Viết bình luận cảm nhận chương này..." rows="3"></textarea>
+            <div class="comment-toolbar" style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+              <button id="btn-share-fb-action" type="button" class="btn-secondary" style="padding: 4px 10px; font-size: 0.75rem; border-radius: var(--radius-sm); color: #60a5fa; background: rgba(24, 119, 242, 0.15);">
+                <i class="fab fa-facebook"></i> Chia sẻ FB
+              </button>
+              <button id="btn-submit-comment" class="btn-primary" style="padding: 5px 14px; font-size: 0.8rem; border-radius: var(--radius-sm);">
+                <i class="fas fa-paper-plane"></i> Gửi Bình Luận
               </button>
             </div>
           </div>
 
           <!-- Feed list -->
-          <div id="comments-feed-list" class="comments-feed-list">
-            <div class="empty-feed">Chưa có ghi chú nào cho chương này.</div>
+          <div id="comments-feed-list" class="comments-feed-list" style="margin-top: 10px;">
+            <div class="empty-feed">Chưa có bình luận nào. Hãy là người đầu tiên để lại cảm nhận!</div>
           </div>
         </div>
 

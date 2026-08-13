@@ -89,8 +89,10 @@ window.ReaderComponent = class ReaderComponent {
       this.scrollToPage(parseInt(e.target.value, 10));
     });
 
-    // Bind Comments submission
+    // Bind Comments submission & Facebook Share
     document.getElementById('btn-submit-comment')?.addEventListener('click', () => this.submitComment());
+    document.getElementById('btn-share-facebook-chapter')?.addEventListener('click', () => this.shareOnFacebook());
+    document.getElementById('btn-share-fb-action')?.addEventListener('click', () => this.shareOnFacebook());
 
     // Handle Keyboard Hotkeys
     window.addEventListener('keydown', (e) => this.handleKeyDown(e));
@@ -180,7 +182,7 @@ window.ReaderComponent = class ReaderComponent {
     // Reset scroll position to top
     this.readerWrapper.scrollTop = 0;
     this.updateProgressUI();
-    this.updateFacebookComments();
+    this.updateDisqusComments();
 
     // Tự động đóng Sidebar trên mobile khi đổi sang chương mới
     if (window.innerWidth <= 768) {
@@ -188,76 +190,61 @@ window.ReaderComponent = class ReaderComponent {
     }
   }
 
-  updateFacebookComments() {
-    const fbContainer = document.getElementById('fb-comments-container');
-    if (!fbContainer || !this.currentManga || !this.currentChapter) return;
+  /**
+   * Tải và reset hệ thống Bình luận Disqus theo từng chương.
+   * Nếu mạng/AdBlocker của người dùng chặn domain Disqus (ERR_BLOCKED_BY_ADMINISTRATOR),
+   * hệ thống sẽ tự động bắt lỗi và hiển thị giao diện thông báo dự phòng mượt mà.
+   */
+  updateDisqusComments() {
+    const disqusThread = document.getElementById('disqus_thread');
+    const disqusWrapper = document.getElementById('disqus-wrapper');
+    if (!disqusThread || !this.currentManga || !this.currentChapter) return;
 
-    window.currentReaderComponent = this;
+    const pageIdentifier = `${this.currentManga.id}_${this.currentChapter.id}`;
+    const pageUrl = `https://drive-manga.pages.dev/#/${this.currentManga.id}/${this.currentChapter.id}`;
+    const pageTitle = `${this.currentManga.title} - ${this.currentChapter.title}`;
+    const shortname = window.DISQUS_SHORTNAME || 'drivemanga';
 
-    let targetUrl = (this.currentChapter.fbCommentUrl || this.currentManga.fbCommentUrl || '').trim();
-    let isExternalFb = true;
-
-    if (!targetUrl) {
-      isExternalFb = false;
-      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:') {
-        targetUrl = 'https://www.facebook.com/MidnightLilyVN';
-      } else {
-        const cleanOrigin = window.location.protocol + '//' + window.location.host + window.location.pathname;
-        targetUrl = `${cleanOrigin}?manga=${encodeURIComponent(this.currentManga.id)}&chap=${encodeURIComponent(this.currentChapter.id)}`;
-      }
-    }
-
-    // Tự động chuyển đổi link ảnh Fanpage dạng photo?fbid=XXX sang dạng link Fanpage Posts chuẩn
-    if (targetUrl.includes('facebook.com/photo') && targetUrl.includes('fbid=')) {
-      try {
-        const urlObj = new URL(targetUrl);
-        const fbid = urlObj.searchParams.get('fbid');
-        if (fbid) {
-          targetUrl = `https://www.facebook.com/MidnightLilyVN/posts/${fbid}`;
-        }
-      } catch (e) {}
-    }
-
-    // Tự động làm sạch các tham số rác nếu có
-    try {
-      if (targetUrl.includes('facebook.com')) {
-        const urlObj = new URL(targetUrl);
-        urlObj.searchParams.delete('notif_id');
-        urlObj.searchParams.delete('notif_t');
-        urlObj.searchParams.delete('ref');
-        urlObj.searchParams.delete('tracking');
-        targetUrl = urlObj.toString();
-      }
-    } catch (e) {}
-
-    fbContainer.innerHTML = `
-      <div style="margin-bottom: 6px; min-height: 140px; width: 100%;">
-        <div class="fb-comments" 
-             data-href="${targetUrl}" 
-             data-width="100%" 
-             data-nposts="5" 
-             data-colorscheme="dark">
-        </div>
-      </div>
-      ${isExternalFb ? `
-        <a href="${targetUrl}" target="_blank" rel="noopener noreferrer" 
-           style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 8px 12px; background: rgba(0, 132, 255, 0.15); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.3); border-radius: var(--radius-sm); font-size: 0.8rem; text-decoration: none; font-weight: 600; margin-top: 6px;">
-          <i class="fab fa-facebook" style="font-size: 1.05rem;"></i> Mở Bài Viết Trực Tiếp Trên Facebook
-        </a>
-      ` : ''}
-    `;
-
-    const triggerParse = () => {
-      if (window.FB && window.FB.XFBML) {
-        try {
-          window.FB.XFBML.parse(document.getElementById('fb-comments-wrapper'));
-        } catch(err) {}
+    const showFallbackUI = () => {
+      if (disqusWrapper) {
+        disqusWrapper.innerHTML = `
+          <div style="text-align: center; padding: 1rem; color: var(--text-secondary);">
+            <i class="fas fa-shield-alt" style="font-size: 2rem; margin-bottom: 0.5rem; color: #a855f7;"></i>
+            <h4 style="font-size: 0.9rem; margin-bottom: 0.3rem; color: #ffffff;">Disqus Đang Bị Trình Duyệt / Mạng Chặn</h4>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.5rem;">Vui lòng tắt AdBlocker hoặc bạn có thể dùng khung Ghi chú & Bình luận bên dưới!</p>
+          </div>
+        `;
       }
     };
 
-    triggerParse();
-    setTimeout(triggerParse, 600);
-    setTimeout(triggerParse, 1500);
+    if (window.DISQUS) {
+      try {
+        window.DISQUS.reset({
+          reload: true,
+          config: function () {
+            this.page.identifier = pageIdentifier;
+            this.page.url = pageUrl;
+            this.page.title = pageTitle;
+            this.language = 'vi';
+          }
+        });
+      } catch (err) {
+        showFallbackUI();
+      }
+    } else {
+      window.disqus_config = function () {
+        this.page.identifier = pageIdentifier;
+        this.page.url = pageUrl;
+        this.page.title = pageTitle;
+        this.language = 'vi';
+      };
+
+      const d = document, s = d.createElement('script');
+      s.src = `https://${shortname}.disqus.com/embed.js`;
+      s.setAttribute('data-timestamp', +new Date());
+      s.onerror = showFallbackUI;
+      (d.head || d.body).appendChild(s);
+    }
   }
 
   renderPages() {
@@ -414,40 +401,42 @@ window.ReaderComponent = class ReaderComponent {
   renderComments() {
     if (!this.currentManga || !this.currentChapter) return;
     const feed = document.getElementById('comments-feed-list');
-    const badge = document.getElementById('comments-count');
     if (!feed) return;
 
     const key = `notes_${this.currentManga.id}_${this.currentChapter.id}`;
     const notes = JSON.parse(localStorage.getItem(key) || '[]');
-    
-    if (badge) badge.textContent = notes.length;
 
     if (notes.length === 0) {
-      feed.innerHTML = `<div class="empty-feed">Chưa có ghi chú nào cho chương này.</div>`;
+      feed.innerHTML = `<div class="empty-feed">Chưa có bình luận nào. Hãy là người đầu tiên để lại cảm nhận!</div>`;
       return;
     }
 
-    feed.innerHTML = notes.map((c, idx) => `
-      <div class="comment-card-item">
-        <div class="comment-card-header">
-          <span class="comment-card-author"><i class="fas fa-sticky-note"></i> Ghi chú #${notes.length - idx}</span>
-          <span class="comment-card-time">${c.time}</span>
+    feed.innerHTML = notes.map((c) => `
+      <div class="comment-card-item" style="background: rgba(15, 23, 42, 0.7); border: 1px solid var(--bg-glass-border); border-radius: var(--radius-sm); padding: 8px 10px; margin-bottom: 8px;">
+        <div class="comment-card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+          <span class="comment-card-author" style="font-weight: 700; font-size: 0.82rem; color: #a5b4fc;">
+            <i class="far fa-user-circle"></i> ${c.author || 'Độc giả'}
+          </span>
+          <span class="comment-card-time" style="font-size: 0.72rem; color: var(--text-muted);">${c.time}</span>
         </div>
-        <div class="comment-card-text">${c.text}</div>
+        <div class="comment-card-text" style="font-size: 0.84rem; color: var(--text-primary); line-height: 1.4;">${c.text}</div>
       </div>
     `).join('');
   }
 
   submitComment() {
+    const nameInput = document.getElementById('comment-author-name');
     const input = document.getElementById('comment-textarea');
     if (!input || !this.currentManga || !this.currentChapter) return;
     const text = input.value.trim();
     if (!text) return;
 
+    const authorName = (nameInput && nameInput.value.trim()) ? nameInput.value.trim() : 'Độc giả';
     const key = `notes_${this.currentManga.id}_${this.currentChapter.id}`;
     const notes = JSON.parse(localStorage.getItem(key) || '[]');
 
     const newNote = {
+      author: authorName,
       text: text,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
@@ -456,6 +445,21 @@ window.ReaderComponent = class ReaderComponent {
     localStorage.setItem(key, JSON.stringify(notes));
     input.value = '';
     this.renderComments();
+  }
+
+  shareOnFacebook() {
+    if (!this.currentManga || !this.currentChapter) return;
+
+    // Luôn ưu tiên dùng URL công khai Cloudflare Pages để máy chủ Facebook crawl tạo Preview Card đẹp mắt
+    let baseUrl = 'https://drive-manga.pages.dev';
+    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' && window.location.protocol !== 'file:') {
+      baseUrl = window.location.protocol + '//' + window.location.host;
+    }
+
+    const shareUrl = `${baseUrl}/?manga=${encodeURIComponent(this.currentManga.id)}&chap=${encodeURIComponent(this.currentChapter.id)}`;
+    const fbShareDialogUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+    
+    window.open(fbShareDialogUrl, 'fbShareWindow', 'width=650,height=550,scrollbars=yes,resizable=yes');
   }
 
   saveProgress() {
