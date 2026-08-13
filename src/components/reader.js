@@ -26,13 +26,42 @@ window.ReaderComponent = class ReaderComponent {
     this.readerPageSelect = document.getElementById('reader-page-select');
     this.progressBar = document.getElementById('reader-progress-bar');
     
+    // Bind Mobile Backdrop & Main Area outside click to close Sidebar
+    const handleOutsideClick = () => {
+      if (window.innerWidth <= 768 && this.readerWrapper && !this.readerWrapper.classList.contains('sidebar-collapsed')) {
+        this.toggleSidebar(true);
+      }
+    };
+
+    const backdropEl = document.getElementById('reader-sidebar-backdrop');
+    if (backdropEl) {
+      backdropEl.addEventListener('click', handleOutsideClick);
+      backdropEl.addEventListener('touchstart', handleOutsideClick);
+    }
+
+    if (this.readerMainArea) {
+      this.readerMainArea.addEventListener('click', handleOutsideClick);
+    }
+
+    // Bind Expand Sidebar Button (Support click & touch)
+    const expandBtn = document.getElementById('btn-expand-sidebar');
+    if (expandBtn) {
+      const handleOpenSidebar = (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        this.toggleSidebar(false); // false = open sidebar
+      };
+      expandBtn.onclick = handleOpenSidebar;
+      expandBtn.ontouchstart = handleOpenSidebar;
+    }
+
     // Bind General Action Controls
     document.getElementById('btn-close-reader')?.addEventListener('click', () => this.close());
     document.getElementById('btn-sidebar-home')?.addEventListener('click', () => this.close());
     document.getElementById('btn-toggle-sidebar')?.addEventListener('click', () => this.toggleSidebar());
     document.getElementById('btn-collapse-sidebar')?.addEventListener('click', () => this.toggleSidebar());
-    document.getElementById('btn-expand-sidebar')?.addEventListener('click', () => this.toggleSidebar());
-    document.getElementById('reader-sidebar-backdrop')?.addEventListener('click', () => this.toggleSidebar(true));
     document.getElementById('btn-sidebar-fullscreen')?.addEventListener('click', () => this.toggleFullscreen());
     document.getElementById('btn-sidebar-bookmark')?.addEventListener('click', () => this.toggleBookmark());
 
@@ -73,15 +102,18 @@ window.ReaderComponent = class ReaderComponent {
   toggleSidebar(forceCollapse = null) {
     if (!this.readerWrapper) return;
     const backdrop = document.getElementById('reader-sidebar-backdrop');
+    const expandBtn = document.getElementById('btn-expand-sidebar');
     const isCollapsed = this.readerWrapper.classList.contains('sidebar-collapsed');
     const shouldCollapse = forceCollapse !== null ? forceCollapse : !isCollapsed;
 
     if (shouldCollapse) {
       this.readerWrapper.classList.add('sidebar-collapsed');
       if (backdrop) backdrop.classList.add('hidden');
+      if (expandBtn) expandBtn.classList.remove('hidden'); // Hiện nút mở lại Sidebar khi thu gọn
     } else {
       this.readerWrapper.classList.remove('sidebar-collapsed');
       if (backdrop) backdrop.classList.remove('hidden');
+      if (expandBtn) expandBtn.classList.add('hidden'); // Ẩn nút mở khi Sidebar đang mở
     }
   }
 
