@@ -1,7 +1,13 @@
 class MangaApp {
   constructor() {
     this.customMangaList = JSON.parse(localStorage.getItem('custom_manga_list') || '[]');
-    this.sheetMangaList = [];
+    let cached = [];
+    try {
+      cached = JSON.parse(localStorage.getItem('sheet_manga_cache') || '[]');
+    } catch (e) {
+      cached = [];
+    }
+    this.sheetMangaList = cached;
     
     this.libraryComponent = null;
     this.readerComponent = null;
@@ -128,7 +134,7 @@ class MangaApp {
     this.libraryComponent.renderCatalog();
 
     // Sync live Google Sheet data & handle initial URL Route
-    await this.syncGoogleSheetData();
+    this.syncGoogleSheetData();
   }
 
   async syncGoogleSheetData() {
@@ -136,6 +142,11 @@ class MangaApp {
       const liveData = await window.SheetDatabase.fetchMangaCatalog();
       if (liveData && liveData.length > 0) {
         this.sheetMangaList = liveData;
+        try {
+          localStorage.setItem('sheet_manga_cache', JSON.stringify(liveData));
+        } catch (e) {
+          console.warn('Cannot write catalog to localStorage cache:', e);
+        }
         if (this.libraryComponent) {
           this.libraryComponent.renderCatalog();
         }

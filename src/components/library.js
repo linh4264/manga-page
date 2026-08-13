@@ -91,14 +91,14 @@ window.LibraryComponent = class LibraryComponent {
     // Resolve Cover URL (Trực tiếp URL ảnh hoặc Link Google Drive)
     let coverSrc = manga.coverUrl;
     if (manga.coverDriveId) {
-      coverSrc = DriveHelper.getImageUrls(manga.coverDriveId).primary;
+      coverSrc = DriveHelper.getImageUrls(manga.coverDriveId, 500).primary;
     } else if (manga.coverUrl && DriveHelper.extractFileId(manga.coverUrl)) {
       const fileId = DriveHelper.extractFileId(manga.coverUrl);
-      coverSrc = DriveHelper.getImageUrls(fileId).primary;
+      coverSrc = DriveHelper.getImageUrls(fileId, 500).primary;
     } else if (!coverSrc && manga.chapters?.[0]?.pages?.[0]) {
       const firstPage = manga.chapters[0].pages[0];
       const fileId = DriveHelper.extractFileId(firstPage);
-      coverSrc = fileId ? DriveHelper.getImageUrls(fileId).primary : firstPage;
+      coverSrc = fileId ? DriveHelper.getImageUrls(fileId, 500).primary : firstPage;
     }
 
     card.innerHTML = `

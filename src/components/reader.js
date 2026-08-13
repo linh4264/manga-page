@@ -287,7 +287,8 @@ window.ReaderComponent = class ReaderComponent {
 
       const img = document.createElement('img');
       img.alt = `Trang ${index + 1}`;
-      img.loading = index < 3 ? 'eager' : 'lazy';
+      img.loading = index < 4 ? 'eager' : 'lazy';
+      img.decoding = 'async';
 
       // Check if pageItem is a Google Drive link / ID or full URL
       const fileId = window.DriveHelper.extractFileId(pageItem);
@@ -305,7 +306,26 @@ window.ReaderComponent = class ReaderComponent {
       this.readerCanvas.appendChild(pageDiv);
     });
 
+    this.preloadNextChapter();
     this.updateProgressUI();
+  }
+
+  preloadNextChapter() {
+    if (!this.currentManga || !this.currentChapter) return;
+    const chapters = this.currentManga.chapters || [];
+    const currentIdx = chapters.findIndex(c => c.id === this.currentChapter.id);
+    if (currentIdx !== -1 && currentIdx < chapters.length - 1) {
+      const nextChap = chapters[currentIdx + 1];
+      const nextPages = nextChap.pages || [];
+      nextPages.slice(0, 3).forEach(pageItem => {
+        const fileId = window.DriveHelper.extractFileId(pageItem);
+        const url = fileId ? window.DriveHelper.getImageUrls(fileId).primary : pageItem;
+        if (url) {
+          const img = new Image();
+          img.src = url;
+        }
+      });
+    }
   }
 
   toggleSidebar() {

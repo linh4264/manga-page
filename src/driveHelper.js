@@ -55,15 +55,18 @@ window.DriveHelper = {
    * Get direct displayable image URLs for a Google Drive File ID.
    * Returns primary CDN link and alternative fallback links.
    * @param {string} fileId 
+   * @param {number} [width] Optional width target for thumbnail optimization (e.g. 500 for covers)
    * @returns {{ primary: string, fallback1: string, fallback2: string }}
    */
-  getImageUrls(fileId) {
+  getImageUrls(fileId, width = null) {
     if (!fileId) return { primary: '', fallback1: '', fallback2: '' };
     const cleanId = this.extractFileId(fileId) || fileId;
+    const sizeParam = width ? `=w${width}` : '';
+    const szParam = width ? `&sz=w${width}` : '&sz=w1920';
     return {
-      primary: `https://lh3.googleusercontent.com/d/${cleanId}`,
+      primary: `https://lh3.googleusercontent.com/d/${cleanId}${sizeParam}`,
       fallback1: `https://drive.google.com/uc?export=view&id=${cleanId}`,
-      fallback2: `https://drive.google.com/thumbnail?id=${cleanId}&sz=w1920`
+      fallback2: `https://drive.google.com/thumbnail?id=${cleanId}${szParam}`
     };
   },
 
@@ -71,10 +74,12 @@ window.DriveHelper = {
    * Attach error-recovery listener to an image element to try fallbacks if loading fails.
    * @param {HTMLImageElement} imgElement 
    * @param {string} fileId 
+   * @param {number} [targetWidth] Optional target width for image optimization
    */
-  attachImageFallback(imgElement, fileId) {
-    const urls = this.getImageUrls(fileId);
+  attachImageFallback(imgElement, fileId, targetWidth = null) {
+    const urls = this.getImageUrls(fileId, targetWidth);
     let attempt = 0;
+    imgElement.decoding = 'async';
     imgElement.src = urls.primary;
 
     imgElement.onerror = () => {
