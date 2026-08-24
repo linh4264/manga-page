@@ -82,6 +82,10 @@ window.LibraryComponent = class LibraryComponent {
       const card = this.createMangaCard(manga, bookmarks.includes(manga.id));
       this.mangaGrid.appendChild(card);
     });
+
+    if (window.FirebaseService) {
+      window.FirebaseService.updateAllViewElementsOnPage();
+    }
   }
 
   createMangaCard(manga, isBookmarked) {
@@ -101,6 +105,9 @@ window.LibraryComponent = class LibraryComponent {
       coverSrc = fileId ? DriveHelper.getImageUrls(fileId, 500).primary : firstPage;
     }
 
+    const liveViews = window.FirebaseService ? window.FirebaseService.getViewCount(manga.id) : 0;
+    const formattedViews = window.FirebaseService ? window.FirebaseService.formatViewCount(liveViews) : (manga.views || '0');
+
     card.innerHTML = `
       <div class="card-cover">
         <img src="${coverSrc || 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=600&auto=format&fit=crop&q=80'}" alt="${manga.title}" loading="lazy">
@@ -115,7 +122,7 @@ window.LibraryComponent = class LibraryComponent {
         <h3 class="card-title">${manga.title}</h3>
         <div class="card-meta">
           <span><i class="far fa-file-alt"></i> ${manga.chapters?.length || 0} tập</span>
-          <span><i class="far fa-eye"></i> ${manga.views || '10K'}</span>
+          <span><i class="far fa-eye"></i> <span data-manga-view-id="${manga.id}">${formattedViews}</span></span>
         </div>
       </div>
     `;
@@ -131,6 +138,11 @@ window.LibraryComponent = class LibraryComponent {
     if (pushState && this.state?.router) {
       this.state.router.goManga(manga.id);
       return;
+    }
+
+    // Tự động ghi nhận lượt xem thật khi vào trang chi tiết truyện
+    if (window.FirebaseService) {
+      window.FirebaseService.recordView(manga.id);
     }
 
     this.libraryContainer.classList.add('hidden');
@@ -154,6 +166,9 @@ window.LibraryComponent = class LibraryComponent {
     const history = JSON.parse(localStorage.getItem('manga_history') || '{}');
     const lastRead = history[manga.id];
 
+    const liveViews = window.FirebaseService ? window.FirebaseService.getViewCount(manga.id) : 0;
+    const formattedViews = window.FirebaseService ? window.FirebaseService.formatViewCount(liveViews) : (manga.views || '0');
+
     this.detailContainer.innerHTML = `
       <button id="btn-back-library" class="btn-secondary" style="margin-bottom: 1.5rem;">
         <i class="fas fa-arrow-left"></i> Quay lại Thư viện
@@ -170,6 +185,13 @@ window.LibraryComponent = class LibraryComponent {
           <h1>${manga.title}</h1>
           <div class="alt-title">${manga.originalTitle || manga.author || ''}</div>
           
+          <div class="detail-stats-bar" style="display: flex; flex-wrap: wrap; gap: 1.25rem; align-items: center; margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.9rem;">
+            <span><i class="far fa-eye" style="color: #60a5fa;"></i> <strong style="color: #ffffff;" data-manga-view-id="${manga.id}">${formattedViews}</strong> lượt xem</span>
+            <span><i class="far fa-file-alt" style="color: #a855f7;"></i> <strong style="color: #ffffff;">${manga.chapters?.length || 0}</strong> tập</span>
+            <span><i class="fas fa-star" style="color: #fbbf24;"></i> <strong style="color: #ffffff;">${manga.rating || '4.9'}</strong></span>
+            <span><i class="fas fa-check-circle" style="color: #34d399;"></i> ${manga.status || 'Đang tiến hành'}</span>
+          </div>
+
           <div class="detail-tags">
             ${(manga.genres || []).map(g => `<span class="badge">${g}</span>`).join('')}
           </div>

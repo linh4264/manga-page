@@ -142,6 +142,11 @@ window.ReaderComponent = class ReaderComponent {
     this.readerWrapper.classList.remove('hidden');
     document.body.style.overflow = 'hidden'; // Chỉ ẩn thanh cuộn body ngoài khi ĐANG ĐỌC CHƯƠNG
 
+    // Ghi nhận lượt xem thật khi độc giả mở đọc chương
+    if (window.FirebaseService && manga) {
+      window.FirebaseService.recordView(manga.id);
+    }
+
     // Tự động thu gọn Sidebar trên điện thoại khi mở đọc chương
     if (window.innerWidth <= 768) {
       this.toggleSidebar(true);
