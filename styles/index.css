@@ -740,11 +740,23 @@ input:focus, select:focus, textarea:focus {
   height: 3px;
   background: rgba(255, 255, 255, 0.05);
   z-index: 1030;
-  transition: right 0.3s ease;
+  transition: right 0.3s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
 }
 
 .reader-wrapper.sidebar-collapsed .reader-progress-track {
   right: 0;
+}
+
+/* Tự động ẩn thanh điều hướng và nút mở sidebar khi vuốt trong chế độ Webtoon */
+.reader-wrapper.is-scrolling-down .btn-expand-sidebar {
+  transform: translateX(50px) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.reader-wrapper.is-scrolling-down .reader-progress-track {
+  transform: translateY(-100%) !important;
+  opacity: 0 !important;
 }
 
 .reader-progress-fill {
@@ -754,17 +766,15 @@ input:focus, select:focus, textarea:focus {
   transition: width 0.1s linear;
 }
 
-/* Floating Top Controls (Quick Back Button Only) */
-
 /* Canvas Override */
 .reader-canvas {
   width: 100%;
   max-width: 900px;
-  margin: 60px auto 80px auto;
+  margin: 0 auto 60px auto;
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-height: calc(100vh - 140px);
+  min-height: 100vh;
   transition: max-width 0.3s ease;
 }
 

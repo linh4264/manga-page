@@ -42,8 +42,11 @@ window.ReaderComponent = class ReaderComponent {
 
     if (this.readerMainArea) {
       this.readerMainArea.addEventListener('click', (e) => {
-        if (!e.target.closest('.manga-flip-viewport') && !e.target.closest('.btn-expand-sidebar')) {
+        if (!e.target.closest('.manga-canvas-viewport') && !e.target.closest('.btn-expand-sidebar')) {
           handleOutsideClick();
+          if (this.readingMode === 'webtoon' && this.readerWrapper) {
+            this.readerWrapper.classList.toggle('is-scrolling-down');
+          }
         }
       });
     }
@@ -973,10 +976,32 @@ window.ReaderComponent = class ReaderComponent {
   }
 
   handleScroll() {
+    if (!this.readerMainArea) return;
+    const scrollTop = this.readerMainArea.scrollTop;
+
+    // Tự động ẩn thanh điều hướng và nút mở sidebar khi vuốt xuống trong chế độ Webtoon
+    if (this.readingMode === 'webtoon') {
+      const scrollDiff = scrollTop - (this.lastScrollTop || 0);
+
+      // Vuốt cuộn xuống (> 8px) -> Ẩn thanh điều hướng để xem tràn viền không bị vướng mắt
+      if (scrollDiff > 8 && scrollTop > 30) {
+        if (this.readerWrapper && !this.readerWrapper.classList.contains('is-scrolling-down')) {
+          this.readerWrapper.classList.add('is-scrolling-down');
+        }
+      }
+      // Vuốt cuộn lên (> 8px) hoặc chạm đỉnh trang -> Hiện lại thanh điều hướng
+      else if (scrollDiff < -8 || scrollTop <= 15) {
+        if (this.readerWrapper && this.readerWrapper.classList.contains('is-scrolling-down')) {
+          this.readerWrapper.classList.remove('is-scrolling-down');
+        }
+      }
+
+      this.lastScrollTop = scrollTop;
+    }
+
     const pageElements = this.readerCanvas.querySelectorAll('.reader-page-item');
     if (pageElements.length === 0) return;
 
-    const scrollTop = this.readerMainArea.scrollTop;
     const viewportMiddle = scrollTop + (this.readerMainArea.clientHeight / 2);
 
     let activeIdx = 0;
