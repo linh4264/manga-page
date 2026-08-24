@@ -132,7 +132,15 @@ window.ReaderComponent = class ReaderComponent {
       }
     };
     window.addEventListener('scroll', onScrollEvent, { passive: true });
+    document.addEventListener('scroll', onScrollEvent, { passive: true });
     this.readerMainArea?.addEventListener('scroll', onScrollEvent, { passive: true });
+
+    // Handle screen resize / orientation changes
+    window.addEventListener('resize', () => {
+      if (this.readerWrapper && !this.readerWrapper.classList.contains('hidden')) {
+        this.applyReadingModeBodyStyles();
+      }
+    });
 
     this.syncReadingModeUI();
   }
@@ -204,14 +212,18 @@ window.ReaderComponent = class ReaderComponent {
   applyReadingModeBodyStyles() {
     if (this.readingMode === 'webtoon') {
       document.body.classList.add('is-webtoon-reading');
+      document.documentElement.classList.add('is-webtoon-reading');
       if (window.innerWidth <= 768) {
-        document.body.style.overflow = 'auto';
-        document.documentElement.style.overflow = 'auto';
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+        if (this.readerMainArea) this.readerMainArea.style.overflow = '';
       } else {
         document.body.style.overflow = 'hidden';
+        document.documentElement.style.overflow = '';
       }
     } else {
       document.body.classList.remove('is-webtoon-reading');
+      document.documentElement.classList.remove('is-webtoon-reading');
       document.body.style.overflow = 'hidden';
       document.documentElement.style.overflow = 'hidden';
     }
@@ -413,7 +425,9 @@ window.ReaderComponent = class ReaderComponent {
       this.renderHorizontalFlipMode();
       return;
     } else {
-      if (this.readerMainArea) this.readerMainArea.style.overflow = 'auto';
+      if (this.readerMainArea) {
+        this.readerMainArea.style.overflow = window.innerWidth <= 768 ? '' : 'auto';
+      }
     }
 
     // MẶC ĐỊNH: CHẾ ĐỘ WEBTOON CUỘN DỌC
@@ -1008,20 +1022,24 @@ window.ReaderComponent = class ReaderComponent {
     if (this.readingMode === 'webtoon') {
       const scrollDiff = scrollTop - (this.lastScrollTop || 0);
 
-      // Vuốt cuộn xuống (> 8px) -> Ẩn thanh điều hướng để xem tràn viền không bị vướng mắt
-      if (scrollDiff > 8 && scrollTop > 30) {
+      // Vuốt cuộn xuống (> 6px) -> Ẩn thanh điều hướng để xem tràn viền không bị vướng mắt
+      if (scrollDiff > 6 && scrollTop > 25) {
         if (this.readerWrapper && !this.readerWrapper.classList.contains('is-scrolling-down')) {
           this.readerWrapper.classList.add('is-scrolling-down');
         }
+        // Đóng sidebar nếu đang mở trên mobile khi cuộn đọc
+        if (window.innerWidth <= 768 && this.readerWrapper && !this.readerWrapper.classList.contains('sidebar-collapsed')) {
+          this.toggleSidebar(true);
+        }
       }
-      // Vuốt cuộn lên (> 8px) hoặc chạm đỉnh trang -> Hiện lại thanh điều hướng
-      else if (scrollDiff < -8 || scrollTop <= 15) {
+      // Vuốt cuộn lên (< -6px) hoặc chạm đỉnh trang -> Hiện lại thanh điều hướng
+      else if (scrollDiff < -6 || scrollTop <= 20) {
         if (this.readerWrapper && this.readerWrapper.classList.contains('is-scrolling-down')) {
           this.readerWrapper.classList.remove('is-scrolling-down');
         }
       }
 
-      this.lastScrollTop = scrollTop;
+      this.lastScrollTop = Math.max(0, scrollTop);
     }
 
     const pageElements = this.readerCanvas.querySelectorAll('.reader-page-item');
@@ -1060,10 +1078,16 @@ window.ReaderComponent = class ReaderComponent {
     }
 
     this.autoScrollTimer = setInterval(() => {
-      if (!this.readerMainArea) return;
+      const isMobileWebtoon = window.innerWidth <= 768 && document.body.classList.contains('is-webtoon-reading');
       if (this.readingMode.startsWith('horizontal')) {
         this.flipPage(1);
+      } else if (isMobileWebtoon) {
+        window.scrollBy({ top: this.autoScrollSpeed, behavior: 'smooth' });
+        if ((window.innerHeight + window.scrollY) >= (document.documentElement.scrollHeight - 10)) {
+          this.stopAutoScroll();
+        }
       } else {
+        if (!this.readerMainArea) return;
         this.readerMainArea.scrollTop += this.autoScrollSpeed;
         if (this.readerMainArea.scrollTop + this.readerMainArea.clientHeight >= this.readerMainArea.scrollHeight - 5) {
           this.stopAutoScroll();
@@ -1101,10 +1125,28 @@ window.ReaderComponent = class ReaderComponent {
   }
 
   toggleFullscreen() {
-    if (!document.fullscreenElement) {
-      this.readerWrapper.requestFullscreen().catch(err => console.log(err));
+    const elem = document.documentElement;
+    const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+    if (!isFullscreen) {
+      if (elem.requestFullscreen) {
+        elem.requestFullscreen().catch(err => console.log(err));
+      } else if (elem.webkitRequestFullscreen) {
+        elem.webkitRequestFullscreen().catch(err => console.log(err));
+      } else if (elem.mozRequestFullScreen) {
+        elem.mozRequestFullScreen().catch(err => console.log(err));
+      } else if (elem.msRequestFullscreen) {
+        elem.msRequestFullscreen().catch(err => console.log(err));
+      }
     } else {
-      document.exitFullscreen().catch(err => console.log(err));
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(err => console.log(err));
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen().catch(err => console.log(err));
+      } else if (document.mozCancelFullScreen) {
+        document.mozCancelFullScreen().catch(err => console.log(err));
+      } else if (document.msExitFullscreen) {
+        document.msExitFullscreen().catch(err => console.log(err));
+      }
     }
   }
 
@@ -1114,6 +1156,7 @@ window.ReaderComponent = class ReaderComponent {
       this.readerWrapper.classList.add('hidden');
     }
     document.body.classList.remove('is-webtoon-reading');
+    document.documentElement.classList.remove('is-webtoon-reading');
     document.body.style.overflow = '';
     document.documentElement.style.overflow = '';
     if (this.state?.router) {
