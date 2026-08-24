@@ -4,15 +4,22 @@
  */
 
 // Mã hóa mảng byte bảo mật tránh lộ đường dẫn URL dạng plain-text
-const _OBFUSCATED_SHEET_KEY = [104,116,116,112,115,58,47,47,115,99,114,105,112,116,46,103,111,111,103,108,101,46,99,111,109,47,109,97,99,114,111,115,47,115,47,65,75,102,121,99,98,120,85,107,45,108,119,74,122,69,97,66,48,74,113,103,118,45,89,77,106,68,117,81,90,72,87,100,77,65,72,71,104,121,117,57,73,102,54,68,122,116,84,71,70,112,69,101,98,45,95,106,111,87,51,100,77,88,80,122,120,120,104,109,106,84,70,82,103,47,101,120,101,99];
+const _OBFUSCATED_SHEET_KEY = [104,116,116,112,115,58,47,47,115,99,114,105,112,116,46,103,111,111,103,108,101,46,99,111,109,47,109,97,99,114,111,115,47,115,47,65,75,102,121,99,98,119,72,108,65,108,97,71,90,106,105,97,81,89,89,101,86,114,57,67,52,87,85,49,67,113,71,112,98,119,51,114,45,98,85,77,109,111,98,75,106,73,103,89,50,101,81,90,105,97,69,108,100,52,106,71,109,57,71,120,45,56,101,72,49,56,98,117,103,47,101,120,101,99];
 
 function _getHardcodedSheetUrl() {
   return _OBFUSCATED_SHEET_KEY.map(c => String.fromCharCode(c)).join('');
 }
 
+const _DEFAULT_SHEET_URL = _getHardcodedSheetUrl();
+
+// Luôn đồng bộ URL hoạt động vào Storage
+if (typeof localStorage !== 'undefined') {
+  localStorage.setItem('google_sheet_api_url', _DEFAULT_SHEET_URL);
+}
+
 window.SheetDatabase = {
   // Tự động sử dụng URL gán cứng ẩn bảo mật làm mặc định
-  apiUrl: _getHardcodedSheetUrl(),
+  apiUrl: _DEFAULT_SHEET_URL,
 
   /**
    * Thiết lập URL API Google Apps Script Web App

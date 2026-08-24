@@ -9,9 +9,15 @@
   <meta name="description"
     content="Trang web đọc truyện tranh online cao cấp hỗ trợ đọc trực tiếp từ nguồn ảnh Google Drive với tốc độ cao, chế độ cuộn Webtoon và giao diện Glassmorphism hiện đại.">
 
-  <!-- Cloudflare Web Analytics -->
-  <script type='module' src='https://static.cloudflareinsights.com/beacon.min.js'
-    data-cf-beacon='{"token": "1cd68bb0c0d645249f00884723b4fd9f"}'></script>
+  <!-- Cloudflare Web Analytics (Chỉ tải trên Live Domain, bỏ qua localhost để tránh lỗi CORS) -->
+  <script>
+    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      const s = document.createElement('script');
+      s.src = 'https://static.cloudflareinsights.com/beacon.min.js';
+      s.setAttribute('data-cf-beacon', '{"token": "1cd68bb0c0d645249f00884723b4fd9f"}');
+      document.head.appendChild(s);
+    }
+  </script>
   <!-- Resource Preconnect Hints for Maximum Speed -->
   <link rel="preconnect" href="https://lh3.googleusercontent.com">
   <link rel="preconnect" href="https://drive.google.com">
@@ -192,9 +198,30 @@
           </div>
         </div>
 
+        <!-- Reading Mode Control Box -->
+        <div class="sidebar-box">
+          <div class="box-label"><i class="fas fa-book-reader"></i> CHẾ ĐỘ ĐỌC TRUYỆN</div>
+          <div class="reading-mode-buttons" id="reader-mode-buttons">
+            <button type="button" class="btn-mode-pill active" data-mode="webtoon" title="Cuộn dọc kiểu Webtoon">
+              <i class="fas fa-scroll"></i> Webtoon (Dọc)
+            </button>
+            <button type="button" class="btn-mode-pill" data-mode="horizontal-rtl" title="Lật trang Manga Nhật Bản (Phải qua Trái) vuốt bẻ cong giấy">
+              <i class="fas fa-book-open"></i> Manga (Phải ➔ Trái)
+            </button>
+          </div>
+        </div>
 
-
-        <!-- Interactive Comments & Facebook Viral Share Section -->
+        <!-- Page Control Box -->
+        <div class="sidebar-box">
+          <div class="box-label"><i class="fas fa-layer-group"></i> ĐIỀU HƯỚNG TRANG</div>
+          <div class="nav-control-row">
+            <button id="btn-first-page" class="btn-nav-square" title="Trang đầu"><i class="fas fa-step-backward"></i></button>
+            <button id="btn-prev-page" class="btn-nav-square" title="Trang trước"><i class="fas fa-chevron-left"></i></button>
+            <select id="reader-page-select" class="sidebar-select"></select>
+            <button id="btn-next-page" class="btn-nav-square" title="Trang sau"><i class="fas fa-chevron-right"></i></button>
+            <button id="btn-last-page" class="btn-nav-square" title="Trang cuối"><i class="fas fa-step-forward"></i></button>
+          </div>
+        </div>
         <div class="sidebar-box comments-section">
           <div class="box-label"
             style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
@@ -260,6 +287,9 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <script src="src/firebaseService.js"></script>
+
+  <!-- St.PageFlip Library for Ultra-Realistic 3D Paper Page Curl & Bending Physics -->
+  <script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.js"></script>
 
   <!-- Application Scripts (Standard JS for direct file:// & local server support) -->
   <script src="src/driveHelper.js"></script>

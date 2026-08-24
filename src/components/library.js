@@ -227,8 +227,8 @@ window.LibraryComponent = class LibraryComponent {
                 <span class="chapter-title-text">${ch.title}</span>
                 <span class="chapter-date"><i class="far fa-clock"></i> ${ch.updatedAt || 'Hôm nay'}</span>
               </div>
-              <button class="btn-edit-chapter btn-secondary" data-chapter-id="${ch.id}" style="padding: 4px 10px; font-size: 0.75rem; border-radius: var(--radius-sm);" title="Chỉnh sửa link PDF chương">
-                <i class="fas fa-edit" style="color: #818cf8;"></i> Sửa Link PDF
+              <button class="btn-edit-chapter btn-secondary" data-chapter-id="${ch.id}" style="padding: 4px 10px; font-size: 0.75rem; border-radius: var(--radius-sm);" title="Chỉnh sửa nội dung chương">
+                <i class="fas fa-edit" style="color: #818cf8;"></i> Sửa Chương
               </button>
             </div>
           `).join('')}

@@ -21,6 +21,72 @@ class MangaApp {
     return this.sheetMangaList;
   }
 
+  isBookmarked(mangaId) {
+    if (!mangaId) return false;
+    const bookmarks = JSON.parse(localStorage.getItem('manga_bookmarks') || '[]');
+    return bookmarks.includes(mangaId);
+  }
+
+  toggleBookmark(mangaId) {
+    if (!mangaId) return false;
+    let bookmarks = JSON.parse(localStorage.getItem('manga_bookmarks') || '[]');
+    const isBookmarked = bookmarks.includes(mangaId);
+    if (isBookmarked) {
+      bookmarks = bookmarks.filter(id => id !== mangaId);
+    } else {
+      bookmarks.push(mangaId);
+    }
+    localStorage.setItem('manga_bookmarks', JSON.stringify(bookmarks));
+    return !isBookmarked;
+  }
+
+  saveReadingHistory(mangaId, chapterId, chapterTitle) {
+    if (!mangaId) return;
+    try {
+      const history = JSON.parse(localStorage.getItem('reading_history') || '{}');
+      history[mangaId] = {
+        chapterId: chapterId,
+        chapterTitle: chapterTitle,
+        updatedAt: new Date().toISOString()
+      };
+      localStorage.setItem('reading_history', JSON.stringify(history));
+    } catch (e) {}
+  }
+
+  getReadingHistory(mangaId) {
+    if (!mangaId) return null;
+    try {
+      const history = JSON.parse(localStorage.getItem('reading_history') || '{}');
+      return history[mangaId] || null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  getComments(chapterId) {
+    if (!chapterId) return [];
+    try {
+      const allComments = JSON.parse(localStorage.getItem('chapter_comments') || '{}');
+      return allComments[chapterId] || [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  addComment(chapterId, author, text) {
+    if (!chapterId || !text) return;
+    try {
+      const allComments = JSON.parse(localStorage.getItem('chapter_comments') || '{}');
+      if (!allComments[chapterId]) allComments[chapterId] = [];
+      allComments[chapterId].unshift({
+        author: author || 'Độc giả',
+        text: text,
+        timestamp: 'Vừa xong'
+      });
+      localStorage.setItem('chapter_comments', JSON.stringify(allComments));
+    } catch (e) {}
+  }
+
   async addCustomManga(mangaObj, adminPassword) {
     if (window.SheetDatabase && window.SheetDatabase.apiUrl) {
       await window.SheetDatabase.saveMangaToSheet(mangaObj, adminPassword);

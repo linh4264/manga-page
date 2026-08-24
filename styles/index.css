@@ -786,6 +786,15 @@ input:focus, select:focus, textarea:focus {
   max-width: 100%;
 }
 
+.reader-canvas.is-horizontal-flip-mode {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 100vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
 .reader-canvas iframe {
   width: 100%;
   border: none !important;
@@ -1827,3 +1836,94 @@ input:focus, select:focus, textarea:focus {
     font-size: 0.8rem;
   }
 }
+
+/* ==========================================================================
+   Manga Horizontal Right-to-Left (RTL) & Page Curl / Swipe Physics
+   ========================================================================== */
+
+/* Reading Mode Buttons in Sidebar */
+.reading-mode-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.btn-mode-pill {
+  width: 100%;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: var(--transition-fast);
+  text-align: left;
+}
+
+.btn-mode-pill:hover {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.3);
+  color: #ffffff;
+}
+
+.btn-mode-pill.active {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.35), rgba(168, 85, 247, 0.35));
+  border-color: #818cf8;
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
+}
+
+.btn-mode-pill i {
+  font-size: 0.95rem;
+  width: 18px;
+  text-align: center;
+  color: #818cf8;
+}
+
+.btn-mode-pill.active i {
+  color: #a855f7;
+}
+
+/* ==========================================================================
+   Manga Canvas Page Curl Engine (Bẻ cong và uốn nếp gấp giấy theo ngón tay 100%)
+   ========================================================================== */
+.manga-canvas-viewport {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #05070c;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+  touch-action: none;
+}
+
+.manga-canvas-viewport.is-dragging {
+  cursor: grabbing;
+}
+
+.manga-curl-canvas {
+  display: block;
+  max-width: 100%;
+  max-height: 98vh;
+  box-shadow: 0 15px 55px rgba(0, 0, 0, 0.95);
+  border-radius: 4px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+
+
+
+

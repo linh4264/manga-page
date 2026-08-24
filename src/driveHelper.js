@@ -33,6 +33,55 @@ window.DriveHelper = {
   },
 
   /**
+   * Extract Google Drive Folder ID from a folder link or raw ID
+   * @param {string} input 
+   * @returns {string|null}
+   */
+  extractFolderId(input) {
+    if (!input || typeof input !== 'string') return null;
+    const trimmed = input.trim();
+
+    const folderMatch = trimmed.match(/\/folders\/([a-zA-Z0-9_-]{20,})/);
+    if (folderMatch) return folderMatch[1];
+
+    const folderParamMatch = trimmed.match(/[?&]id=([a-zA-Z0-9_-]{20,})/);
+    if (folderParamMatch && trimmed.includes('folder')) return folderParamMatch[1];
+
+    if (/^[a-zA-Z0-9_-]{25,50}$/.test(trimmed)) {
+      return trimmed;
+    }
+
+    return null;
+  },
+
+  /**
+   * Lấy danh sách toàn bộ ID ảnh từ thư mục Google Drive qua Google Apps Script
+   * @param {string} folderIdOrUrl
+   * @returns {Promise<{ success: boolean, images?: string[], count?: number, error?: string }>}
+   */
+  async fetchFolderImages(folderIdOrUrl) {
+    const folderId = this.extractFolderId(folderIdOrUrl);
+    if (!folderId) {
+      return { success: false, error: 'Link thư mục Google Drive không hợp lệ! Vui lòng dán link có dạng: https://drive.google.com/drive/folders/...' };
+    }
+
+    const apiUrl = window.SheetDatabase ? window.SheetDatabase.apiUrl : null;
+    if (!apiUrl) {
+      return { success: false, error: 'Chưa kết nối Google Sheet/Apps Script API!' };
+    }
+
+    try {
+      const response = await fetch(`${apiUrl}?action=getFolderImages&folderId=${encodeURIComponent(folderId)}`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      return data;
+    } catch (err) {
+      console.warn('Lỗi lấy ảnh từ thư mục Google Drive:', err);
+      return { success: false, error: err.message || 'Không thể kết nối với thư mục Google Drive.' };
+    }
+  },
+
+  /**
    * Parse a batch text input containing multiple Drive links or IDs (one per line or space-separated).
    * @param {string} rawText 
    * @returns {string[]} List of valid File IDs extracted
