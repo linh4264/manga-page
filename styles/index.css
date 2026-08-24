@@ -1683,6 +1683,35 @@ input:focus, select:focus, textarea:focus {
     flex-direction: column;
   }
 
+  /* Khi đọc Webtoon trên mobile: Cho phép cuộn trang tự nhiên (Window Scroll) để Trình duyệt tự động ẩn thanh URL / Header */
+  body.is-webtoon-reading {
+    overflow-y: auto !important;
+    height: auto !important;
+    min-height: 100vh !important;
+  }
+
+  body.is-webtoon-reading .reader-wrapper {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: auto !important;
+    min-height: 100vh !important;
+    overflow: visible !important;
+  }
+
+  body.is-webtoon-reading .reader-main-area {
+    overflow-y: visible !important;
+    height: auto !important;
+    min-height: 100vh !important;
+  }
+
+  body.is-webtoon-reading .reader-canvas {
+    margin: 0 auto !important;
+    padding: 0 !important;
+    min-height: 100vh !important;
+  }
+
   .reader-top-floating {
     top: 10px;
     left: 10px;

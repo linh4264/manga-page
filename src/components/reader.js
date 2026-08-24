@@ -125,12 +125,14 @@ window.ReaderComponent = class ReaderComponent {
     // Handle Keyboard Hotkeys
     window.addEventListener('keydown', (e) => this.handleKeyDown(e));
 
-    // Handle Scroll for Webtoon Progress & Page tracking
-    this.readerMainArea?.addEventListener('scroll', () => {
-      if (this.readingMode === 'webtoon') {
+    // Handle Scroll for Webtoon Progress & Page tracking (Hỗ trợ cả window scroll trên mobile & container scroll trên PC)
+    const onScrollEvent = () => {
+      if (this.readingMode === 'webtoon' && this.readerWrapper && !this.readerWrapper.classList.contains('hidden')) {
         this.handleScroll();
       }
-    });
+    };
+    window.addEventListener('scroll', onScrollEvent, { passive: true });
+    this.readerMainArea?.addEventListener('scroll', onScrollEvent, { passive: true });
 
     this.syncReadingModeUI();
   }
@@ -184,7 +186,7 @@ window.ReaderComponent = class ReaderComponent {
 
     this.loadChapter(chapterId);
     this.readerWrapper.classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
+    this.applyReadingModeBodyStyles();
 
     // Ghi nhận lượt xem thật khi độc giả mở đọc chương
     if (window.FirebaseService && manga) {
@@ -197,6 +199,22 @@ window.ReaderComponent = class ReaderComponent {
     }
 
     this.syncReadingModeUI();
+  }
+
+  applyReadingModeBodyStyles() {
+    if (this.readingMode === 'webtoon') {
+      document.body.classList.add('is-webtoon-reading');
+      if (window.innerWidth <= 768) {
+        document.body.style.overflow = 'auto';
+        document.documentElement.style.overflow = 'auto';
+      } else {
+        document.body.style.overflow = 'hidden';
+      }
+    } else {
+      document.body.classList.remove('is-webtoon-reading');
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+    }
   }
 
   loadChapter(chapterId) {
@@ -892,8 +910,13 @@ window.ReaderComponent = class ReaderComponent {
 
     const pageElements = this.readerCanvas.querySelectorAll('.reader-page-item');
     if (pageElements[pageIdx]) {
+      const isMobileWebtoon = window.innerWidth <= 768 && document.body.classList.contains('is-webtoon-reading');
       const targetY = pageElements[pageIdx].offsetTop - 20;
-      this.readerMainArea.scrollTo({ top: targetY, behavior: 'smooth' });
+      if (isMobileWebtoon) {
+        window.scrollTo({ top: targetY, behavior: 'smooth' });
+      } else {
+        this.readerMainArea.scrollTo({ top: targetY, behavior: 'smooth' });
+      }
       this.currentPageIndex = pageIdx;
       this.updateProgressUI();
     }
@@ -976,8 +999,10 @@ window.ReaderComponent = class ReaderComponent {
   }
 
   handleScroll() {
-    if (!this.readerMainArea) return;
-    const scrollTop = this.readerMainArea.scrollTop;
+    const isMobileWebtoon = window.innerWidth <= 768 && document.body.classList.contains('is-webtoon-reading');
+    const scrollTop = isMobileWebtoon
+      ? (window.scrollY || document.documentElement.scrollTop || 0)
+      : (this.readerMainArea?.scrollTop || 0);
 
     // Tự động ẩn thanh điều hướng và nút mở sidebar khi vuốt xuống trong chế độ Webtoon
     if (this.readingMode === 'webtoon') {
@@ -1002,7 +1027,8 @@ window.ReaderComponent = class ReaderComponent {
     const pageElements = this.readerCanvas.querySelectorAll('.reader-page-item');
     if (pageElements.length === 0) return;
 
-    const viewportMiddle = scrollTop + (this.readerMainArea.clientHeight / 2);
+    const viewportH = isMobileWebtoon ? window.innerHeight : (this.readerMainArea?.clientHeight || window.innerHeight);
+    const viewportMiddle = scrollTop + (viewportH / 2);
 
     let activeIdx = 0;
     pageElements.forEach((el, idx) => {
@@ -1069,6 +1095,7 @@ window.ReaderComponent = class ReaderComponent {
   setReadingMode(mode) {
     this.readingMode = mode;
     localStorage.setItem('drive_manga_reading_mode', mode);
+    this.applyReadingModeBodyStyles();
     this.syncReadingModeUI();
     this.renderPages();
   }
@@ -1086,7 +1113,9 @@ window.ReaderComponent = class ReaderComponent {
     if (this.readerWrapper) {
       this.readerWrapper.classList.add('hidden');
     }
+    document.body.classList.remove('is-webtoon-reading');
     document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
     if (this.state?.router) {
       this.state.router.goLibrary();
     }
