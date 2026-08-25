@@ -30,9 +30,11 @@ export interface Manga {
 }
 
 export interface CommentItem {
+  id?: string;
   author: string;
   text: string;
   timestamp: string;
+  createdAt?: number;
 }
 
 export interface ReadingHistoryItem {

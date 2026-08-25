@@ -10,6 +10,12 @@ describe('FirebaseViewService - Key Sanitization & View Formatting', () => {
     expect(service.sanitizeKey('')).toBe('unknown');
   });
 
+  it('sanitizes chapter ID for Firebase key validity', () => {
+    expect(service.sanitizeChapterKey('chap.1#part2$sub[1]/test')).toBe('chap_1_part2_sub_1__test');
+    expect(service.sanitizeChapterKey('chap-1')).toBe('chap-1');
+    expect(service.sanitizeChapterKey('')).toBe('unknown_chapter');
+  });
+
   it('formats view counts into readable K/M suffix', () => {
     expect(service.formatViewCount(500)).toBe('500');
     expect(service.formatViewCount(1500)).toBe('1.5K');

@@ -1,7 +1,9 @@
 /**
  * Firebase Realtime Database Service for DriveManga
- * Quản lý đếm lượt xem (Views) thật theo thời gian thực (Real-time View Counter)
+ * Quản lý đếm lượt xem (Views) và Bình luận trực tuyến theo thời gian thực (Real-time View Counter & Comments)
  */
+
+import { CommentItem } from './types/manga';
 
 const firebaseConfig = {
   apiKey: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_API_KEY) || "AIzaSyAQPv0p09EmCdPisFdluwEpsIZh4d653A4",
@@ -50,6 +52,14 @@ export class FirebaseViewService {
    */
   sanitizeKey(id?: string | null): string {
     if (!id) return 'unknown';
+    return String(id).trim().replace(/[.#$\[\]\/]/g, '_');
+  }
+
+  /**
+   * Chuẩn hóa Chapter ID để dùng làm Firebase Database Key hợp lệ
+   */
+  sanitizeChapterKey(id?: string | null): string {
+    if (!id) return 'unknown_chapter';
     return String(id).trim().replace(/[.#$\[\]\/]/g, '_');
   }
 
@@ -109,6 +119,7 @@ export class FirebaseViewService {
   /**
    * Ghi nhận 1 lượt xem thật (Tăng +1) khi người dùng đọc truyện / chương
    * Có cơ chế chống spam F5 (chỉ tăng 1 lần trong 5 phút trên 1 thiết bị)
+   * Tuân thủ quy tắc bảo mật Firebase Realtime Database (+1 increment rule)
    */
   async recordView(mangaId?: string | null): Promise<void> {
     if (!mangaId) return;
@@ -126,11 +137,11 @@ export class FirebaseViewService {
       localStorage.setItem(storageKey, String(now));
     }
 
-    // 1. Tăng view qua Firebase SDK Transaction (Chống xung đột)
+    // 1. Tăng view qua Firebase SDK Transaction (Đảm bảo chỉ +1 theo Security Rules)
     if (this.db) {
       try {
         const mangaViewRef = this.db.ref(`manga_views/${key}`);
-        mangaViewRef.transaction((currentViews: number) => {
+        mangaViewRef.transaction((currentViews: number | null) => {
           return (currentViews || 0) + 1;
         }, (error: any, committed: boolean, snapshot: any) => {
           if (error) {
@@ -161,6 +172,120 @@ export class FirebaseViewService {
     } catch (err) {
       console.warn('Lỗi ghi nhận view qua REST API:', err);
     }
+  }
+
+  // ==========================================
+  // REAL-TIME ONLINE CHAPTER COMMENTS SYSTEM
+  // ==========================================
+
+  /**
+   * Lắng nghe bình luận thời gian thực cho 1 chương truyện
+   */
+  subscribeChapterComments(chapterId: string, callback: (comments: CommentItem[]) => void): () => void {
+    const key = this.sanitizeChapterKey(chapterId);
+
+    if (this.db) {
+      const commentsRef = this.db.ref(`chapter_comments/${key}`).limitToLast(100);
+      const listener = commentsRef.on('value', (snapshot: any) => {
+        const val = snapshot.val();
+        const list: CommentItem[] = [];
+        if (val && typeof val === 'object') {
+          Object.keys(val).forEach(id => {
+            const item = val[id];
+            if (item && typeof item === 'object') {
+              list.push({
+                id: id,
+                author: item.author || 'Độc giả',
+                text: item.text || '',
+                timestamp: item.timestamp || 'Vừa xong',
+                createdAt: item.createdAt || 0
+              });
+            }
+          });
+          list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        }
+        callback(list);
+      });
+
+      return () => {
+        commentsRef.off('value', listener);
+      };
+    }
+
+    // Fallback: Fetch 1 lần qua REST
+    this.fetchChapterComments(chapterId).then(callback);
+    return () => {};
+  }
+
+  /**
+   * Tải danh sách bình luận online của 1 chương qua REST API
+   */
+  async fetchChapterComments(chapterId: string): Promise<CommentItem[]> {
+    const key = this.sanitizeChapterKey(chapterId);
+    try {
+      const res = await fetch(`${firebaseConfig.databaseURL}/chapter_comments/${key}.json?orderBy="$key"&limitToLast=50`);
+      if (res.ok) {
+        const val = await res.json();
+        const list: CommentItem[] = [];
+        if (val && typeof val === 'object') {
+          Object.keys(val).forEach(id => {
+            const item = val[id];
+            if (item && typeof item === 'object') {
+              list.push({
+                id: id,
+                author: item.author || 'Độc giả',
+                text: item.text || '',
+                timestamp: item.timestamp || 'Vừa xong',
+                createdAt: item.createdAt || 0
+              });
+            }
+          });
+          list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+          return list;
+        }
+      }
+    } catch (e) {
+      console.warn('Lỗi tải bình luận online:', e);
+    }
+    return [];
+  }
+
+  /**
+   * Gửi bình luận online thật lên Firebase Realtime Database
+   */
+  async addChapterComment(chapterId: string, author: string, text: string): Promise<CommentItem> {
+    const key = this.sanitizeChapterKey(chapterId);
+    const cleanAuthor = (author || 'Độc giả').trim().slice(0, 50);
+    const cleanText = text.trim().slice(0, 500);
+    const now = Date.now();
+    const formattedTime = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
+
+    const newComment: CommentItem = {
+      author: cleanAuthor,
+      text: cleanText,
+      timestamp: formattedTime,
+      createdAt: now
+    };
+
+    if (this.db) {
+      const commentsRef = this.db.ref(`chapter_comments/${key}`);
+      const newRef = commentsRef.push();
+      await newRef.set(newComment);
+      newComment.id = newRef.key;
+      return newComment;
+    }
+
+    // Fallback REST POST
+    const res = await fetch(`${firebaseConfig.databaseURL}/chapter_comments/${key}.json`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newComment)
+    });
+    if (res.ok) {
+      const resJson = await res.json();
+      newComment.id = resJson.name;
+    }
+    return newComment;
   }
 
   subscribe(callback: (views: Record<string, number>) => void): void {
@@ -218,3 +343,4 @@ export const FirebaseService = new FirebaseViewService();
 if (typeof window !== 'undefined') {
   window.FirebaseService = FirebaseService;
 }
+

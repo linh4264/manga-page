@@ -126,37 +126,63 @@ export const SheetDatabase = {
   },
 
   /**
-   * Thêm/Cập nhật truyện vào Google Sheet (Gửi POST request chứa mã bảo mật Admin tới Apps Script Web App)
+   * Thêm/Cập nhật truyện vào Google Sheet (Gửi POST request chứa mã bảo mật Admin tới Apps Script Web App và kiểm tra phản hồi)
    */
   async saveMangaToSheet(mangaObj: Manga, adminPassword?: string): Promise<boolean> {
-    if (!this.apiUrl) return false;
+    if (!this.apiUrl) {
+      throw new Error('Chưa cấu hình URL Google Sheet API!');
+    }
 
+    const payload = {
+      action: 'save',
+      secretToken: adminPassword || "",
+      id: mangaObj.id,
+      title: mangaObj.title,
+      author: mangaObj.author,
+      coverUrl: mangaObj.coverUrl || mangaObj.coverDriveId || '',
+      description: mangaObj.description || '',
+      genres: mangaObj.genres || ['PDF', 'Google Drive'],
+      chapters: mangaObj.chapters || [],
+      manga: mangaObj
+    };
+
+    let response: Response;
     try {
-      const payload = {
-        secretToken: adminPassword || "",
-        id: mangaObj.id,
-        title: mangaObj.title,
-        author: mangaObj.author,
-        coverUrl: mangaObj.coverUrl || mangaObj.coverDriveId || '',
-        description: mangaObj.description || '',
-        genres: mangaObj.genres || ['PDF', 'Google Drive'],
-        chapters: mangaObj.chapters || [],
-        manga: mangaObj
-      };
-
-      await fetch(this.apiUrl, {
+      response = await fetch(this.apiUrl, {
         method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
+        redirect: 'follow',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(payload)
       });
-
-      console.log('Đã gửi dữ liệu truyện kèm mã bảo mật Admin lên Google Sheet thành công!');
-      return true;
-    } catch (err) {
-      console.warn('Lỗi lưu dữ liệu lên Google Sheet:', err);
-      return false;
+    } catch (err: any) {
+      console.warn('Lỗi kết nối mạng khi gọi Google Sheet:', err);
+      throw new Error(`Không thể kết nối đến máy chủ Google Sheet: ${err?.message || 'Lỗi mạng hoặc CORS'}`);
     }
+
+    if (!response.ok) {
+      throw new Error(`Google Sheet API trả về mã lỗi HTTP ${response.status}`);
+    }
+
+    let resData: any = null;
+    try {
+      resData = await response.json();
+    } catch {
+      try {
+        const text = await response.text();
+        if (text && (text.toLowerCase().includes('error') || text.toLowerCase().includes('sai') || text.toLowerCase().includes('denied'))) {
+          throw new Error(text);
+        }
+      } catch (e: any) {
+        if (e?.message) throw e;
+      }
+    }
+
+    if (resData && (resData.success === false || resData.status === 'error')) {
+      throw new Error(resData.error || resData.message || 'Mật khẩu Admin không chính xác!');
+    }
+
+    console.log('✅ Đã xác thực mật khẩu Admin và lưu dữ liệu truyện lên Google Sheet thành công!');
+    return true;
   }
 };
 

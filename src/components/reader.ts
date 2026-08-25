@@ -3,7 +3,7 @@
  * and PDF direct embedded viewing.
  */
 
-import { Manga, Chapter } from '../types/manga';
+import { Manga, Chapter, CommentItem } from '../types/manga';
 import { DriveHelper } from '../driveHelper';
 import { PdfHelper } from '../pdfHelper';
 import { FirebaseService } from '../firebaseService';
@@ -22,6 +22,7 @@ export class ReaderComponent {
   isFlipping = false;
   lastScrollTop = 0;
   canvasCurlEngine: any = null;
+  unsubscribeComments?: () => void;
 
   readerWrapper: HTMLElement | null = null;
   readerMainArea: HTMLElement | null = null;
@@ -338,29 +339,58 @@ export class ReaderComponent {
   }
 
   loadComments(chapterId: string): void {
+    if (this.unsubscribeComments) {
+      this.unsubscribeComments();
+      this.unsubscribeComments = undefined;
+    }
+
+    this.unsubscribeComments = FirebaseService.subscribeChapterComments(chapterId, (comments) => {
+      this.renderComments(comments);
+    });
+  }
+
+  renderComments(comments: CommentItem[]): void {
     const feed = document.getElementById('comments-feed-list');
     if (!feed) return;
 
-    const comments = this.state.getComments(chapterId);
+    feed.innerHTML = '';
     if (!comments || comments.length === 0) {
       feed.innerHTML = '<div class="empty-feed">Chưa có bình luận nào. Hãy là người đầu tiên để lại cảm nhận!</div>';
       return;
     }
 
-    feed.innerHTML = comments.map((c: any) => `
-      <div class="comment-item" style="padding: 8px 10px; background: rgba(255,255,255,0.03); border-radius: var(--radius-sm); margin-bottom: 6px; border: 1px solid rgba(255,255,255,0.05);">
-        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #818cf8; margin-bottom: 3px;">
-          <strong>${c.author || 'Độc giả ẩn danh'}</strong>
-          <span style="color: var(--text-muted);">${c.timestamp || 'Vừa xong'}</span>
-        </div>
-        <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4;">${c.text}</div>
-      </div>
-    `).join('');
+    comments.forEach(c => {
+      const item = document.createElement('div');
+      item.className = 'comment-item';
+      item.style.cssText = 'padding: 8px 10px; background: rgba(255,255,255,0.03); border-radius: var(--radius-sm); margin-bottom: 6px; border: 1px solid rgba(255,255,255,0.05);';
+
+      const header = document.createElement('div');
+      header.style.cssText = 'display: flex; justify-content: space-between; font-size: 0.75rem; color: #818cf8; margin-bottom: 3px;';
+
+      const authorStrong = document.createElement('strong');
+      authorStrong.textContent = c.author || 'Độc giả';
+
+      const timeSpan = document.createElement('span');
+      timeSpan.style.color = 'var(--text-muted)';
+      timeSpan.textContent = c.timestamp || 'Vừa xong';
+
+      header.appendChild(authorStrong);
+      header.appendChild(timeSpan);
+
+      const bodyDiv = document.createElement('div');
+      bodyDiv.style.cssText = 'font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4; word-break: break-word;';
+      bodyDiv.textContent = c.text;
+
+      item.appendChild(header);
+      item.appendChild(bodyDiv);
+      feed.appendChild(item);
+    });
   }
 
-  submitComment(): void {
+  async submitComment(): Promise<void> {
     const authorInput = document.getElementById('comment-author-name') as HTMLInputElement | null;
     const textInput = document.getElementById('comment-textarea') as HTMLTextAreaElement | null;
+    const submitBtn = document.getElementById('btn-submit-comment') as HTMLButtonElement | null;
     if (!textInput || !this.currentChapter) return;
 
     const text = textInput.value.trim();
@@ -371,9 +401,23 @@ export class ReaderComponent {
       return;
     }
 
-    this.state.addComment(this.currentChapter.id, author || 'Độc giả', text);
-    textInput.value = '';
-    this.loadComments(this.currentChapter.id);
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang gửi...';
+    }
+
+    try {
+      await FirebaseService.addChapterComment(this.currentChapter.id, author || 'Độc giả', text);
+      textInput.value = '';
+    } catch (err) {
+      console.warn('Lỗi gửi bình luận:', err);
+      alert('Không thể gửi bình luận trực tuyến. Vui lòng kiểm tra lại kết nối!');
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Gửi Bình Luận';
+      }
+    }
   }
 
   shareOnFacebook(): void {
@@ -1226,6 +1270,10 @@ export class ReaderComponent {
 
   close(): void {
     this.stopAutoScroll();
+    if (this.unsubscribeComments) {
+      this.unsubscribeComments();
+      this.unsubscribeComments = undefined;
+    }
     if (this.readerWrapper) {
       this.readerWrapper.classList.add('hidden');
     }
