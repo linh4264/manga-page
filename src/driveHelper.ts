@@ -149,23 +149,23 @@ export const DriveHelper = {
     const encodedId = cleanId ? encodeURIComponent(cleanId) : '';
     const validWidth = (targetWidth && targetWidth > 0 && targetWidth <= 4000) ? Math.floor(targetWidth) : null;
 
-    // Danh sách nguồn tải theo thứ tự ưu tiên tối ưu:
-    // 1. Edge CDN Proxy (nếu trên Live Cloudflare)
-    // 2. Google Drive Thumbnail CDN (rất nhanh, chịu tải tốt, ít bị rate limit)
-    // 3. Global Edge CDN Cache qua wsrv.nl (vượt qua hoàn toàn hạn ngạch IP / 403 Google)
-    // 4. Google UserContent CDN (lh3.googleusercontent.com)
-    // 5. Google User Content alternative host (lh3.google.com)
-    // 6. Google Drive direct views & downloads
+    // Danh sách nguồn tải theo thứ tự ưu tiên:
+    // 1. First-Party Cloudflare Edge Proxy (/api/image-proxy)
+    // 2. Google Direct UserContent CDN (lh3.googleusercontent.com/d/...)
+    // 3. Google Drive Thumbnail CDN (drive.google.com/thumbnail)
+    // 4. Google User Content alternative (lh3.google.com)
+    // 5. Google Drive direct export view (drive.google.com/uc?export=view)
+    // 6. Google Drive direct download (drive.google.com/uc?export=download)
+    // 7. Global Edge CDN Backup (wsrv.nl - dự phòng cuối cùng nếu toàn bộ hạ tầng trên bị nghẽn IP)
     const candidateSources = [
       urls.edgeProxy,
-      urls.fallback1,
-      encodedId ? `https://wsrv.nl/?url=https%3A%2F%2Fdrive.google.com%2Fthumbnail%3Fid%3D${encodedId}%26sz%3Dw${validWidth || 1600}&output=webp` : null,
       urls.primary,
-      encodedId ? `https://wsrv.nl/?url=https%3A%2F%2Flh3.googleusercontent.com%2Fd%2F${encodedId}%3Dw${validWidth || 1600}&output=webp` : null,
+      urls.fallback1,
       encodedId ? `https://lh3.google.com/u/0/d/${encodedId}` : null,
       urls.fallback2,
       urls.fallback3,
-      encodedId ? `https://docs.google.com/uc?export=download&id=${encodedId}` : null
+      encodedId ? `https://docs.google.com/uc?export=download&id=${encodedId}` : null,
+      encodedId ? `https://wsrv.nl/?url=https%3A%2F%2Fdrive.google.com%2Fthumbnail%3Fid%3D${encodedId}%26sz%3Dw${validWidth || 1600}&output=webp` : null
     ].filter((url): url is string => Boolean(url) && (url.startsWith('https://') || url.startsWith('/api/image-proxy')));
 
     if (candidateSources.length === 0) {

@@ -39,21 +39,45 @@ export const SheetDatabase = {
   },
 
   /**
-   * Lấy danh mục truyện trực tiếp từ Google Sheet qua Apps Script Web App hoặc Link Xuất Bản CSV
+   * Thời gian sống của bộ nhớ đệm Catalog (10 phút)
    */
-  async fetchMangaCatalog(): Promise<Manga[] | null> {
+  CACHE_TTL_MS: 10 * 60 * 1000,
+
+  /**
+   * Lấy danh mục truyện trực tiếp từ Google Sheet qua Apps Script Web App hoặc Link Xuất Bản CSV
+   * @param force Bỏ qua bộ nhớ đệm TTL và tải mới nếu là true
+   */
+  async fetchMangaCatalog(force = false): Promise<Manga[] | null> {
     if (!this.apiUrl) {
       console.log('Chưa cấu hình Google Sheets URL, sử dụng dữ liệu tĩnh.');
       return null;
     }
 
-    try {
-      const separator = this.apiUrl.includes('?') ? '&' : '?';
-      const cacheBustUrl = `${this.apiUrl}${separator}_t=${Date.now()}`;
+    // Kiểm tra bộ nhớ đệm LocalStorage nếu không phải force reload
+    if (!force && typeof localStorage !== 'undefined') {
+      try {
+        const lastSync = localStorage.getItem('sheet_manga_sync_time');
+        const cached = localStorage.getItem('sheet_manga_cache');
+        if (lastSync && cached) {
+          const age = Date.now() - parseInt(lastSync, 10);
+          if (age < this.CACHE_TTL_MS) {
+            const parsed = JSON.parse(cached);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              return this.sortCatalogChapters(parsed);
+            }
+          }
+        }
+      } catch (e) {}
+    }
 
-      const response = await fetch(cacheBustUrl, { 
+    try {
+      const url = force 
+        ? `${this.apiUrl}${this.apiUrl.includes('?') ? '&' : '?'}_t=${Date.now()}`
+        : this.apiUrl;
+
+      const response = await fetch(url, { 
         method: 'GET',
-        cache: 'no-store'
+        headers: { 'Accept': 'application/json, text/csv, */*' }
       });
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       
@@ -62,7 +86,9 @@ export const SheetDatabase = {
       // Nếu là link Xuất Bản CSV từ Google Sheet (pub?output=csv)
       if (this.apiUrl.includes('output=csv') || contentType.includes('text/csv') || contentType.includes('text/plain')) {
         const csvText = await response.text();
-        return this.parseCSV(csvText);
+        const parsedCsv = this.parseCSV(csvText);
+        this.saveCacheToStorage(parsedCsv);
+        return parsedCsv;
       }
 
       const data = await response.json();
@@ -72,10 +98,24 @@ export const SheetDatabase = {
       } else if (data && data.mangaCatalog && Array.isArray(data.mangaCatalog)) {
         result = data.mangaCatalog;
       }
-      return this.sortCatalogChapters(result);
+      const sorted = this.sortCatalogChapters(result);
+      if (sorted && sorted.length > 0) {
+        this.saveCacheToStorage(sorted);
+      }
+      return sorted;
     } catch (err) {
       console.warn('Không thể kết nối với Google Sheets API:', err);
       return null;
+    }
+  },
+
+  saveCacheToStorage(catalog: Manga[] | null): void {
+    if (!catalog || !Array.isArray(catalog) || catalog.length === 0 || typeof localStorage === 'undefined') return;
+    try {
+      localStorage.setItem('sheet_manga_cache', JSON.stringify(catalog));
+      localStorage.setItem('sheet_manga_sync_time', String(Date.now()));
+    } catch (e) {
+      console.warn('Không thể ghi cache catalog vào localStorage:', e);
     }
   },
 

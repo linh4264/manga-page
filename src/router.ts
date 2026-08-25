@@ -20,8 +20,10 @@ export class AppRouter {
   }
 
   init(): void {
-    window.addEventListener('popstate', () => this.handleRoute());
-    window.addEventListener('hashchange', () => this.handleRoute());
+    if (typeof window !== 'undefined') {
+      window.addEventListener('popstate', () => this.handleRoute());
+      window.addEventListener('hashchange', () => this.handleRoute());
+    }
   }
 
   /**
@@ -29,6 +31,7 @@ export class AppRouter {
    */
   getRouteParts(): string[] {
     let rawPath = '';
+    if (typeof window === 'undefined') return [];
     
     // Check hash route first if available
     if (window.location.hash && window.location.hash.startsWith('#/')) {
@@ -53,6 +56,7 @@ export class AppRouter {
    * Update browser address bar using Hash Routing (/#/:id and /#/:id/:chapterId)
    */
   pushRoute(path: string): void {
+    if (typeof window === 'undefined') return;
     const targetPath = path.startsWith('/') ? path : '/' + path;
     window.location.hash = '#' + targetPath;
   }

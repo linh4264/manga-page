@@ -275,7 +275,7 @@ export class MangaApp {
 
     if (SheetDatabase && SheetDatabase.apiUrl) {
       try {
-        const liveData = await SheetDatabase.fetchMangaCatalog();
+        const liveData = await SheetDatabase.fetchMangaCatalog(force);
         if (liveData && liveData.length > 0) {
           this.sheetMangaList = liveData;
           try {
