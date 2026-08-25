@@ -96,30 +96,6 @@ export class MangaApp {
     }
   }
 
-  getComments(chapterId: string): CommentItem[] {
-    if (!chapterId) return [];
-    try {
-      const allComments: Record<string, CommentItem[]> = JSON.parse(localStorage.getItem('chapter_comments') || '{}');
-      return allComments[chapterId] || [];
-    } catch (e) {
-      return [];
-    }
-  }
-
-  addComment(chapterId: string, author: string, text: string): void {
-    if (!chapterId || !text) return;
-    try {
-      const allComments: Record<string, CommentItem[]> = JSON.parse(localStorage.getItem('chapter_comments') || '{}');
-      if (!allComments[chapterId]) allComments[chapterId] = [];
-      allComments[chapterId].unshift({
-        author: author || 'Độc giả',
-        text: text,
-        timestamp: 'Vừa xong'
-      });
-      localStorage.setItem('chapter_comments', JSON.stringify(allComments));
-    } catch (e) {}
-  }
-
   async addCustomManga(mangaObj: Manga, adminPassword?: string): Promise<void> {
     if (SheetDatabase && SheetDatabase.apiUrl) {
       try {

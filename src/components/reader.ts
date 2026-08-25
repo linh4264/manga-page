@@ -8,6 +8,7 @@ import { DriveHelper } from '../driveHelper';
 import { PdfHelper } from '../pdfHelper';
 import { FirebaseService } from '../firebaseService';
 import { CanvasCurlEngine } from '../reader/canvasCurlEngine';
+import { SheetDatabase } from '../sheetDatabase';
 
 export class ReaderComponent {
   state: any;
@@ -291,8 +292,31 @@ export class ReaderComponent {
     }
 
     this.updateBookmarkButtonState();
-    this.renderPages();
-    this.updatePageSelect();
+
+    // Nếu chương chưa tải danh sách ảnh (Lazy chapter data)
+    if ((!chapter.pages || chapter.pages.length === 0) && !chapter.pdfUrl && !chapter.isPdf && SheetDatabase) {
+      if (this.readerCanvas) {
+        this.readerCanvas.className = `reader-canvas ${this.zoomLevel}`;
+        this.readerCanvas.innerHTML = `
+          <div style="padding: 4rem; text-align: center; color: var(--text-muted);">
+            <i class="fas fa-spinner fa-spin" style="font-size: 2.5rem; margin-bottom: 1rem; color: #818cf8;"></i>
+            <p style="font-size: 1rem; color: var(--text-primary);">Đang tải nội dung ${chapter.title}...</p>
+          </div>
+        `;
+      }
+      SheetDatabase.fetchChapterPages(this.currentManga.id, chapter.id, chapter.pages).then(pages => {
+        if (this.currentChapter?.id === chapter.id) {
+          chapter.pages = pages;
+          this.renderPages();
+          this.updatePageSelect();
+          this.updateProgressUI();
+        }
+      });
+    } else {
+      this.renderPages();
+      this.updatePageSelect();
+    }
+
     this.updateChapterNavButtons();
     
     // Lưu lịch sử đọc
@@ -655,24 +679,30 @@ export class ReaderComponent {
     const currentIdx = chapters.findIndex(c => c.id === this.currentChapter?.id);
     if (currentIdx !== -1 && currentIdx < chapters.length - 1) {
       const nextChap = chapters[currentIdx + 1];
-      const nextPages = nextChap.pages || [];
-      nextPages.slice(0, 3).forEach(pageItem => {
-        const fileId = DriveHelper.extractFileId(pageItem);
-        if (fileId) {
-          const img = new Image();
-          img.referrerPolicy = 'no-referrer';
-          DriveHelper.attachImageFallback(img, fileId);
-        } else {
-          try {
-            const parsed = new URL(pageItem);
-            if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
-              const img = new Image();
-              img.referrerPolicy = 'no-referrer';
-              img.src = parsed.href;
-            }
-          } catch {}
-        }
-      });
+      if ((!nextChap.pages || nextChap.pages.length === 0) && !nextChap.pdfUrl && !nextChap.isPdf && SheetDatabase) {
+        SheetDatabase.fetchChapterPages(this.currentManga.id, nextChap.id).then(pages => {
+          nextChap.pages = pages;
+        });
+      } else {
+        const nextPages = nextChap.pages || [];
+        nextPages.slice(0, 3).forEach(pageItem => {
+          const fileId = DriveHelper.extractFileId(pageItem);
+          if (fileId) {
+            const img = new Image();
+            img.referrerPolicy = 'no-referrer';
+            DriveHelper.attachImageFallback(img, fileId);
+          } else {
+            try {
+              const parsed = new URL(pageItem);
+              if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+                const img = new Image();
+                img.referrerPolicy = 'no-referrer';
+                img.src = parsed.href;
+              }
+            } catch {}
+          }
+        });
+      }
     }
   }
 

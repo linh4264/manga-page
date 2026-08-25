@@ -145,13 +145,7 @@ export class SeoHelper {
       },
       'genre': manga.genres || ['Manga', 'Webtoon'],
       'inLanguage': 'vi-VN',
-      'numberOfEpisodes': manga.chapters?.length || 0,
-      'aggregateRating': {
-        '@type': 'AggregateRating',
-        'ratingValue': manga.rating || '4.8',
-        'bestRating': '5',
-        'ratingCount': '1250'
-      }
+      'numberOfEpisodes': manga.chapters?.length || 0
     });
   }
 
