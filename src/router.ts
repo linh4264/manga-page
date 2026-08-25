@@ -4,6 +4,8 @@
  */
 
 import { Manga } from './types/manga';
+import { SeoHelper } from './seoHelper';
+import { AnalyticsService } from './analyticsService';
 
 export interface AppInstance {
   getAllManga: () => Manga[];
@@ -95,7 +97,7 @@ export class AppRouter {
   }
 
   /**
-   * Parse current URL and render the target view
+   * Parse current URL and render the target view with SEO and Analytics tracking
    */
   handleRoute(): void {
     const parts = this.getRouteParts();
@@ -115,6 +117,8 @@ export class AppRouter {
       if (this.app.libraryComponent) {
         this.app.libraryComponent.renderCatalog();
       }
+      SeoHelper.setHomeSEO();
+      AnalyticsService.trackPageView('/', 'DriveManga - Đọc Truyện Tranh Online');
       return;
     }
 
@@ -133,6 +137,7 @@ export class AppRouter {
       document.getElementById('library-view')?.classList.remove('hidden');
       document.querySelector('.view-container')?.classList.remove('hidden');
       document.querySelector('.app-header')?.classList.remove('hidden');
+      SeoHelper.setHomeSEO();
       return;
     }
 
@@ -150,6 +155,9 @@ export class AppRouter {
       if (this.app.libraryComponent) {
         this.app.libraryComponent.showDetailView(targetManga, false);
       }
+      SeoHelper.setMangaDetailSEO(targetManga);
+      AnalyticsService.trackPageView(`/${targetManga.id}`, `${targetManga.title} - Chi Tiết Truyện`);
+      AnalyticsService.trackMangaView(targetManga.id, targetManga.title, targetManga.genres);
     } else if (parts.length >= 2) {
       // Route /:id/:chapterId -> Show Reader View
       const chapterId = parts[1];
@@ -159,6 +167,12 @@ export class AppRouter {
       document.querySelector('.app-header')?.classList.add('hidden');
       if (this.app.readerComponent) {
         this.app.readerComponent.open(targetManga, chapterId, false);
+      }
+      const currentChapter = targetManga.chapters?.find(c => c.id === chapterId) || targetManga.chapters?.[0];
+      if (currentChapter) {
+        SeoHelper.setChapterReaderSEO(targetManga, currentChapter);
+        AnalyticsService.trackPageView(`/${targetManga.id}/${currentChapter.id}`, `${targetManga.title} - ${currentChapter.title}`);
+        AnalyticsService.trackChapterStart(targetManga.id, currentChapter.id, currentChapter.title, 'webtoon');
       }
     }
   }

@@ -119,6 +119,39 @@ export const SheetDatabase = {
     }
   },
 
+  chapterPagesCache: new Map<string, string[]>(),
+
+  /**
+   * Tải danh sách trang ảnh của 1 chương theo yêu cầu (Lazy loading chapter pages)
+   */
+  async fetchChapterPages(mangaId: string, chapterId: string, existingPages?: string[]): Promise<string[]> {
+    if (existingPages && existingPages.length > 0) {
+      return existingPages;
+    }
+
+    const cacheKey = `${mangaId}_${chapterId}`;
+    if (this.chapterPagesCache.has(cacheKey)) {
+      return this.chapterPagesCache.get(cacheKey)!;
+    }
+
+    if (!this.apiUrl) return [];
+
+    try {
+      const url = `${this.apiUrl}${this.apiUrl.includes('?') ? '&' : '?'}action=getChapter&mangaId=${encodeURIComponent(mangaId)}&chapterId=${encodeURIComponent(chapterId)}`;
+      const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
+      if (response.ok) {
+        const data = await response.json();
+        if (data && Array.isArray(data.pages)) {
+          this.chapterPagesCache.set(cacheKey, data.pages);
+          return data.pages;
+        }
+      }
+    } catch (e) {
+      console.warn(`Không thể tải lazy pages cho chương ${chapterId}:`, e);
+    }
+    return [];
+  },
+
   /**
    * Sắp xếp danh sách chương cho toàn bộ danh mục theo thứ tự tự nhiên của tên chương
    */

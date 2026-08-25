@@ -12,6 +12,50 @@ export interface Chapter {
   fbCommentUrl?: string;
 }
 
+/**
+ * Lightweight Manga Metadata Summary (Dùng cho Thư viện & Trang chủ để tối ưu băng thông)
+ */
+export interface MangaSummary {
+  id: string;
+  title: string;
+  originalTitle?: string;
+  author?: string;
+  artist?: string;
+  status?: string;
+  coverUrl?: string;
+  coverDriveId?: string;
+  bannerUrl?: string;
+  description?: string;
+  genres?: string[];
+  rating?: number | string;
+  views?: string | number;
+  chapterCount?: number;
+  latestChapterTitle?: string;
+}
+
+/**
+ * Chapter Summary (Dùng cho Danh sách chương ở màn hình Chi tiết)
+ */
+export interface ChapterSummary {
+  id: string;
+  title: string;
+  updatedAt?: string;
+  pageCount?: number;
+  isPdf?: boolean;
+}
+
+/**
+ * Chi tiết trang của một chương (Lazy Loaded theo nhu cầu)
+ */
+export interface ChapterDetail {
+  id: string;
+  mangaId: string;
+  title: string;
+  pages: string[];
+  pdfUrl?: string;
+  isPdf?: boolean;
+}
+
 export interface Manga {
   id: string;
   title: string;
