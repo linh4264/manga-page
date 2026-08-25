@@ -273,6 +273,11 @@ window.EditChapterModalComponent = class EditChapterModalComponent {
       this.targetChapter.fbCommentUrl = newFbUrl;
       this.targetChapter.updatedAt = new Date().toISOString().split('T')[0];
 
+      // Sắp xếp danh sách chương theo thứ tự tự nhiên của tên chương
+      if (this.targetManga.chapters && this.targetManga.chapters.length > 1) {
+        this.targetManga.chapters.sort((a, b) => (a.title || '').localeCompare(b.title || '', 'vi', { numeric: true, sensitivity: 'base' }));
+      }
+
       await this.state.updateManga(this.targetManga, adminPassword);
       this.close();
 

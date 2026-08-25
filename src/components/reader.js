@@ -189,6 +189,11 @@ window.ReaderComponent = class ReaderComponent {
     document.querySelector('.view-container')?.classList.add('hidden');
     document.querySelector('.app-header')?.classList.add('hidden');
 
+    // Sắp xếp danh sách chương theo thứ tự tự nhiên của tên chương (Chương 1, 2, ..., 10)
+    if (manga.chapters && manga.chapters.length > 1) {
+      manga.chapters.sort((a, b) => (a.title || '').localeCompare(b.title || '', 'vi', { numeric: true, sensitivity: 'base' }));
+    }
+
     // Populate chapter select dropdown
     this.readerChapterSelect.innerHTML = '';
     manga.chapters.forEach(ch => {

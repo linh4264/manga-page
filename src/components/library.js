@@ -177,6 +177,14 @@ window.LibraryComponent = class LibraryComponent {
     const liveViews = window.FirebaseService ? window.FirebaseService.getViewCount(manga.id) : 0;
     const formattedViews = window.FirebaseService ? window.FirebaseService.formatViewCount(liveViews) : (manga.views || '0');
 
+    // Luôn sắp xếp danh sách chương chuẩn theo tên chương tự nhiên (Chương 1, 2, ..., 10)
+    if (manga.chapters && manga.chapters.length > 1) {
+      manga.chapters = this.sortChapters(manga.chapters, 'asc');
+    }
+
+    const currentOrder = this.chapterSortOrder || 'asc';
+    const displayChapters = this.sortChapters(manga.chapters || [], currentOrder);
+
     this.detailContainer.innerHTML = `
       <button id="btn-back-library" class="btn-secondary" style="margin-bottom: 1.5rem;">
         <i class="fas fa-arrow-left"></i> Quay lại Thư viện
@@ -222,14 +230,20 @@ window.LibraryComponent = class LibraryComponent {
       </div>
 
       <div class="glass-panel chapter-list-section">
-        <div class="chapter-list-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <div class="chapter-list-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 8px;">
           <h2 class="section-title" style="margin-bottom: 0;"><i class="fas fa-list"></i> Danh Sách Chương (${manga.chapters?.length || 0})</h2>
-          <button id="btn-add-chapter" class="btn-primary" style="font-size: 0.85rem; padding: 6px 14px;">
-            <i class="fas fa-plus-circle"></i> + Thêm Chương Mới
-          </button>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button id="btn-toggle-chapter-sort" class="btn-secondary" style="font-size: 0.8rem; padding: 6px 12px; border-radius: var(--radius-full);" title="Đổi thứ tự sắp xếp theo tên">
+              <i class="fas ${currentOrder === 'asc' ? 'fa-sort-numeric-down' : 'fa-sort-numeric-up-alt'}"></i> 
+              <span>${currentOrder === 'asc' ? 'Chương 1 ➔ Mới nhất' : 'Mới nhất ➔ Chương 1'}</span>
+            </button>
+            <button id="btn-add-chapter" class="btn-primary" style="font-size: 0.85rem; padding: 6px 14px;">
+              <i class="fas fa-plus-circle"></i> + Thêm Chương Mới
+            </button>
+          </div>
         </div>
         <div class="chapter-grid">
-          ${(manga.chapters || []).map(ch => `
+          ${displayChapters.map(ch => `
             <div class="chapter-item" data-chapter-id="${ch.id}" style="display: flex; align-items: center; justify-content: space-between;">
               <div class="chapter-info-click" style="flex: 1; display: flex; justify-content: space-between; align-items: center; margin-right: 12px; cursor: pointer;">
                 <span class="chapter-title-text">${ch.title}</span>
@@ -261,6 +275,11 @@ window.LibraryComponent = class LibraryComponent {
       }
     });
 
+    document.getElementById('btn-toggle-chapter-sort')?.addEventListener('click', () => {
+      this.chapterSortOrder = (this.chapterSortOrder || 'asc') === 'asc' ? 'desc' : 'asc';
+      this.showDetailView(manga, false);
+    });
+
     document.getElementById('btn-add-chapter')?.addEventListener('click', () => {
       this.state.openAddChapterModal(manga);
     });
@@ -274,7 +293,8 @@ window.LibraryComponent = class LibraryComponent {
     });
 
     document.getElementById('btn-start-reading').addEventListener('click', () => {
-      const targetChapterId = lastRead ? lastRead.chapterId : manga.chapters[0]?.id;
+      const firstChapter = manga.chapters?.[0];
+      const targetChapterId = lastRead ? lastRead.chapterId : firstChapter?.id;
       if (targetChapterId) {
         this.onReadChapter(manga, targetChapterId);
       }
@@ -305,5 +325,18 @@ window.LibraryComponent = class LibraryComponent {
         this.state.openEditChapterModal(manga, chapterObj);
       });
     });
+  }
+
+  /**
+   * Sắp xếp danh sách chương theo thứ tự tự nhiên của tên chương (Chương 1, Chương 2, ..., Chương 10)
+   */
+  sortChapters(chapters, order = 'asc') {
+    if (!Array.isArray(chapters)) return [];
+    const sorted = [...chapters].sort((a, b) => {
+      const titleA = a.title || '';
+      const titleB = b.title || '';
+      return titleA.localeCompare(titleB, 'vi', { numeric: true, sensitivity: 'base' });
+    });
+    return order === 'desc' ? sorted.reverse() : sorted;
   }
 }

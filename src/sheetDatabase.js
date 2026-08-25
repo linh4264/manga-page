@@ -54,17 +54,30 @@ window.SheetDatabase = {
         return this.parseCSV(csvText);
       }
 
-      const data = await response.json();
+      let result = null;
       if (Array.isArray(data)) {
-        return data;
+        result = data;
       } else if (data && data.mangaCatalog && Array.isArray(data.mangaCatalog)) {
-        return data.mangaCatalog;
+        result = data.mangaCatalog;
       }
-      return null;
+      return this.sortCatalogChapters(result);
     } catch (err) {
       console.warn('Không thể kết nối với Google Sheets API:', err);
       return null;
     }
+  },
+
+  /**
+   * Sắp xếp danh sách chương cho toàn bộ danh mục theo thứ tự tự nhiên của tên chương
+   */
+  sortCatalogChapters(mangaList) {
+    if (!Array.isArray(mangaList)) return mangaList;
+    mangaList.forEach(manga => {
+      if (manga && Array.isArray(manga.chapters) && manga.chapters.length > 1) {
+        manga.chapters.sort((a, b) => (a.title || '').localeCompare(b.title || '', 'vi', { numeric: true, sensitivity: 'base' }));
+      }
+    });
+    return mangaList;
   },
 
   /**
@@ -97,7 +110,7 @@ window.SheetDatabase = {
         }
       }
     }
-    return mangaList;
+    return this.sortCatalogChapters(mangaList);
   },
 
   /**

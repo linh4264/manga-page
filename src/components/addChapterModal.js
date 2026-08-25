@@ -277,6 +277,9 @@ window.AddChapterModalComponent = class AddChapterModalComponent {
 
       this.targetManga.chapters.push(newChapter);
 
+      // Sắp xếp danh sách chương theo thứ tự tự nhiên của tên chương
+      this.targetManga.chapters.sort((a, b) => (a.title || '').localeCompare(b.title || '', 'vi', { numeric: true, sensitivity: 'base' }));
+
       // Update manga to Google Sheet and state with Admin Password
       await this.state.updateManga(this.targetManga, adminPassword);
       this.close();
