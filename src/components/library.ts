@@ -1,30 +1,57 @@
-window.LibraryComponent = class LibraryComponent {
-  constructor(appState, onSelectManga, onReadChapter) {
+/**
+ * Library Component: Renders manga grid catalog, genre filters, and manga detail view.
+ */
+
+import { Manga, Chapter } from '../types/manga';
+import { DriveHelper } from '../driveHelper';
+import { FirebaseService } from '../firebaseService';
+
+export class LibraryComponent {
+  state: any;
+  onSelectManga: (manga: Manga) => void;
+  onReadChapter: (manga: Manga, chapterId: string) => void;
+  activeGenre: string;
+  searchQuery: string;
+  chapterSortOrder: 'asc' | 'desc';
+
+  libraryContainer: HTMLElement | null = null;
+  detailContainer: HTMLElement | null = null;
+  mangaGrid: HTMLElement | null = null;
+  searchInput: HTMLInputElement | null = null;
+  genreBar: HTMLElement | null = null;
+
+  constructor(
+    appState: any,
+    onSelectManga: (manga: Manga) => void,
+    onReadChapter: (manga: Manga, chapterId: string) => void
+  ) {
     this.state = appState;
     this.onSelectManga = onSelectManga;
     this.onReadChapter = onReadChapter;
     this.activeGenre = 'All';
     this.searchQuery = '';
+    this.chapterSortOrder = 'asc';
     
     this.initDOMReferences();
   }
 
-  initDOMReferences() {
+  initDOMReferences(): void {
     this.libraryContainer = document.getElementById('library-view');
     this.detailContainer = document.getElementById('detail-view');
     this.mangaGrid = document.getElementById('manga-grid');
-    this.searchInput = document.getElementById('search-input');
+    this.searchInput = document.getElementById('search-input') as HTMLInputElement | null;
     this.genreBar = document.getElementById('genre-filter-bar');
     
-    this.searchInput?.addEventListener('input', (e) => {
-      this.searchQuery = e.target.value.toLowerCase().trim();
+    this.searchInput?.addEventListener('input', (e: Event) => {
+      const target = e.target as HTMLInputElement;
+      this.searchQuery = target.value.toLowerCase().trim();
       this.renderCatalog();
     });
 
     this.setupGenreFilter();
   }
 
-  setupGenreFilter() {
+  setupGenreFilter(): void {
     if (!this.genreBar) return;
     const genres = ['All', 'Action', 'Fantasy', 'Sci-Fi', 'Manhwa', 'Shounen', 'Google Drive', 'Bookmarks'];
     
@@ -34,20 +61,20 @@ window.LibraryComponent = class LibraryComponent {
       btn.className = `chip-filter ${genre === this.activeGenre ? 'active' : ''}`;
       btn.textContent = genre === 'Bookmarks' ? '⭐ Yêu thích' : genre;
       btn.addEventListener('click', () => {
-        this.genreBar.querySelectorAll('.chip-filter').forEach(b => b.classList.remove('active'));
+        this.genreBar?.querySelectorAll('.chip-filter').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         this.activeGenre = genre;
         this.renderCatalog();
       });
-      this.genreBar.appendChild(btn);
+      this.genreBar?.appendChild(btn);
     });
   }
 
-  renderCatalog() {
+  renderCatalog(): void {
     if (!this.mangaGrid) return;
     
-    let catalog = this.state.getAllManga();
-    const bookmarks = JSON.parse(localStorage.getItem('manga_bookmarks') || '[]');
+    let catalog: Manga[] = this.state.getAllManga();
+    const bookmarks: string[] = JSON.parse(localStorage.getItem('manga_bookmarks') || '[]');
 
     // Filter by genre
     if (this.activeGenre === 'Bookmarks') {
@@ -80,15 +107,13 @@ window.LibraryComponent = class LibraryComponent {
 
     catalog.forEach(manga => {
       const card = this.createMangaCard(manga, bookmarks.includes(manga.id));
-      this.mangaGrid.appendChild(card);
+      this.mangaGrid?.appendChild(card);
     });
 
-    if (window.FirebaseService) {
-      window.FirebaseService.updateAllViewElementsOnPage();
-    }
+    FirebaseService.updateAllViewElementsOnPage();
   }
 
-  createMangaCard(manga, isBookmarked) {
+  createMangaCard(manga: Manga, isBookmarked: boolean): HTMLElement {
     const card = document.createElement('div');
     card.className = 'manga-card';
 
@@ -105,8 +130,8 @@ window.LibraryComponent = class LibraryComponent {
       coverSrc = fileId ? DriveHelper.getImageUrls(fileId, 500).primary : firstPage;
     }
 
-    const liveViews = window.FirebaseService ? window.FirebaseService.getViewCount(manga.id) : 0;
-    const formattedViews = window.FirebaseService ? window.FirebaseService.formatViewCount(liveViews) : (manga.views || '0');
+    const liveViews = FirebaseService.getViewCount(manga.id);
+    const formattedViews = FirebaseService.formatViewCount(liveViews || manga.views);
 
     card.innerHTML = `
       <div class="card-cover">
@@ -134,48 +159,38 @@ window.LibraryComponent = class LibraryComponent {
     return card;
   }
 
-  showDetailView(manga, pushState = true) {
+  showDetailView(manga: Manga, pushState = true): void {
     if (pushState && this.state?.router) {
       this.state.router.goManga(manga.id);
       return;
     }
 
     // Tự động ghi nhận lượt xem thật khi vào trang chi tiết truyện
-    if (window.FirebaseService) {
-      window.FirebaseService.recordView(manga.id);
-    }
+    FirebaseService.recordView(manga.id);
 
     document.getElementById('reader-wrapper')?.classList.add('hidden');
     document.querySelector('.view-container')?.classList.remove('hidden');
     document.querySelector('.app-header')?.classList.remove('hidden');
-    document.body.classList.remove('is-webtoon-reading');
-    document.documentElement.classList.remove('is-webtoon-reading');
-    document.body.style.overflow = '';
-    document.documentElement.style.overflow = '';
 
-    this.libraryContainer.classList.add('hidden');
+    if (!this.detailContainer) return;
+
+    this.libraryContainer?.classList.add('hidden');
     this.detailContainer.classList.remove('hidden');
-    
-    // Smooth scroll to top
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo(0, 0);
 
-    const bookmarks = JSON.parse(localStorage.getItem('manga_bookmarks') || '[]');
-    const isBookmarked = bookmarks.includes(manga.id);
+    const isBookmarked = this.state.isBookmarked(manga.id);
+    const lastRead = this.state.getReadingHistory(manga.id);
 
-    // Resolve cover image (Trực tiếp URL ảnh hoặc Link Google Drive)
     let coverSrc = manga.coverUrl;
     if (manga.coverDriveId) {
-      coverSrc = DriveHelper.getImageUrls(manga.coverDriveId).primary;
+      coverSrc = DriveHelper.getImageUrls(manga.coverDriveId, 600).primary;
     } else if (manga.coverUrl && DriveHelper.extractFileId(manga.coverUrl)) {
       const fileId = DriveHelper.extractFileId(manga.coverUrl);
-      coverSrc = DriveHelper.getImageUrls(fileId).primary;
+      coverSrc = DriveHelper.getImageUrls(fileId, 600).primary;
     }
 
-    const history = JSON.parse(localStorage.getItem('manga_history') || '{}');
-    const lastRead = history[manga.id];
-
-    const liveViews = window.FirebaseService ? window.FirebaseService.getViewCount(manga.id) : 0;
-    const formattedViews = window.FirebaseService ? window.FirebaseService.formatViewCount(liveViews) : (manga.views || '0');
+    const liveViews = FirebaseService.getViewCount(manga.id);
+    const formattedViews = FirebaseService.formatViewCount(liveViews || manga.views);
 
     // Luôn sắp xếp danh sách chương chuẩn theo tên chương tự nhiên (Chương 1, 2, ..., 10)
     if (manga.chapters && manga.chapters.length > 1) {
@@ -259,19 +274,19 @@ window.LibraryComponent = class LibraryComponent {
     `;
 
     // Bind event listener to detail cover image fallback
-    const detailCoverImg = this.detailContainer.querySelector('#detail-cover-clickable img');
+    const detailCoverImg = this.detailContainer.querySelector('#detail-cover-clickable img') as HTMLImageElement | null;
     const coverFileId = manga.coverDriveId || DriveHelper.extractFileId(manga.coverUrl);
     if (detailCoverImg && coverFileId) {
       DriveHelper.attachImageFallback(detailCoverImg, coverFileId, 600);
     }
 
     // Event handlers for detail view buttons
-    document.getElementById('btn-back-library').addEventListener('click', () => {
+    document.getElementById('btn-back-library')?.addEventListener('click', () => {
       if (this.state?.router) {
         this.state.router.goHome();
       } else {
-        this.detailContainer.classList.add('hidden');
-        this.libraryContainer.classList.remove('hidden');
+        this.detailContainer?.classList.add('hidden');
+        this.libraryContainer?.classList.remove('hidden');
       }
     });
 
@@ -292,7 +307,7 @@ window.LibraryComponent = class LibraryComponent {
       this.state.openEditMangaModal(manga);
     });
 
-    document.getElementById('btn-start-reading').addEventListener('click', () => {
+    document.getElementById('btn-start-reading')?.addEventListener('click', () => {
       const firstChapter = manga.chapters?.[0];
       const targetChapterId = lastRead ? lastRead.chapterId : firstChapter?.id;
       if (targetChapterId) {
@@ -300,8 +315,8 @@ window.LibraryComponent = class LibraryComponent {
       }
     });
 
-    document.getElementById('btn-toggle-bookmark').addEventListener('click', (e) => {
-      let bMarks = JSON.parse(localStorage.getItem('manga_bookmarks') || '[]');
+    document.getElementById('btn-toggle-bookmark')?.addEventListener('click', () => {
+      let bMarks: string[] = JSON.parse(localStorage.getItem('manga_bookmarks') || '[]');
       if (bMarks.includes(manga.id)) {
         bMarks = bMarks.filter(id => id !== manga.id);
       } else {
@@ -313,16 +328,17 @@ window.LibraryComponent = class LibraryComponent {
 
     // Chapter item click handlers (read chapter or edit chapter link)
     this.detailContainer.querySelectorAll('.chapter-item').forEach(item => {
-      const chId = item.dataset.chapterId;
+      const chEl = item as HTMLElement;
+      const chId = chEl.dataset.chapterId;
       const chapterObj = manga.chapters.find(c => c.id === chId);
 
-      item.querySelector('.chapter-info-click')?.addEventListener('click', () => {
-        this.onReadChapter(manga, chId);
+      chEl.querySelector('.chapter-info-click')?.addEventListener('click', () => {
+        if (chId) this.onReadChapter(manga, chId);
       });
 
-      item.querySelector('.btn-edit-chapter')?.addEventListener('click', (e) => {
+      chEl.querySelector('.btn-edit-chapter')?.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.state.openEditChapterModal(manga, chapterObj);
+        if (chapterObj) this.state.openEditChapterModal(manga, chapterObj);
       });
     });
   }
@@ -330,7 +346,7 @@ window.LibraryComponent = class LibraryComponent {
   /**
    * Sắp xếp danh sách chương theo thứ tự tự nhiên của tên chương (Chương 1, Chương 2, ..., Chương 10)
    */
-  sortChapters(chapters, order = 'asc') {
+  sortChapters(chapters: Chapter[], order: 'asc' | 'desc' = 'asc'): Chapter[] {
     if (!Array.isArray(chapters)) return [];
     const sorted = [...chapters].sort((a, b) => {
       const titleA = a.title || '';
@@ -339,4 +355,8 @@ window.LibraryComponent = class LibraryComponent {
     });
     return order === 'desc' ? sorted.reverse() : sorted;
   }
+}
+
+if (typeof window !== 'undefined') {
+  window.LibraryComponent = LibraryComponent;
 }

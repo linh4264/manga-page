@@ -3,10 +3,12 @@
  * dùng Google Sheet làm Cơ Sở Dữ Liệu Cloud miễn phí 100% cho trang web.
  */
 
+import { Manga } from './types/manga';
+
 // Mã hóa mảng byte bảo mật tránh lộ đường dẫn URL dạng plain-text
 const _OBFUSCATED_SHEET_KEY = [104,116,116,112,115,58,47,47,115,99,114,105,112,116,46,103,111,111,103,108,101,46,99,111,109,47,109,97,99,114,111,115,47,115,47,65,75,102,121,99,98,119,72,108,65,108,97,71,90,106,105,97,81,89,89,101,86,114,57,67,52,87,85,49,67,113,71,112,98,119,51,114,45,98,85,77,109,111,98,75,106,73,103,89,50,101,81,90,105,97,69,108,100,52,106,71,109,57,71,120,45,56,101,72,49,56,98,117,103,47,101,120,101,99];
 
-function _getHardcodedSheetUrl() {
+function _getHardcodedSheetUrl(): string {
   return _OBFUSCATED_SHEET_KEY.map(c => String.fromCharCode(c)).join('');
 }
 
@@ -17,26 +19,26 @@ if (typeof localStorage !== 'undefined') {
   localStorage.setItem('google_sheet_api_url', _DEFAULT_SHEET_URL);
 }
 
-window.SheetDatabase = {
+export const SheetDatabase = {
   // Tự động sử dụng URL gán cứng ẩn bảo mật làm mặc định
   apiUrl: _DEFAULT_SHEET_URL,
 
   /**
    * Thiết lập URL API Google Apps Script Web App
-   * @param {string} url 
    */
-  setApiUrl(url) {
+  setApiUrl(url?: string | null): void {
     if (!url) return;
     const cleanUrl = url.trim();
     this.apiUrl = cleanUrl;
-    localStorage.setItem('google_sheet_api_url', cleanUrl);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('google_sheet_api_url', cleanUrl);
+    }
   },
 
   /**
    * Lấy danh mục truyện trực tiếp từ Google Sheet qua Apps Script Web App hoặc Link Xuất Bản CSV
-   * @returns {Promise<Array>} Danh sách các bộ truyện
    */
-  async fetchMangaCatalog() {
+  async fetchMangaCatalog(): Promise<Manga[] | null> {
     if (!this.apiUrl) {
       console.log('Chưa cấu hình Google Sheets URL, sử dụng dữ liệu tĩnh.');
       return null;
@@ -61,7 +63,7 @@ window.SheetDatabase = {
       }
 
       const data = await response.json();
-      let result = null;
+      let result: Manga[] | null = null;
       if (Array.isArray(data)) {
         result = data;
       } else if (data && data.mangaCatalog && Array.isArray(data.mangaCatalog)) {
@@ -77,7 +79,7 @@ window.SheetDatabase = {
   /**
    * Sắp xếp danh sách chương cho toàn bộ danh mục theo thứ tự tự nhiên của tên chương
    */
-  sortCatalogChapters(mangaList) {
+  sortCatalogChapters(mangaList: Manga[] | null): Manga[] | null {
     if (!Array.isArray(mangaList)) return mangaList;
     mangaList.forEach(manga => {
       if (manga && Array.isArray(manga.chapters) && manga.chapters.length > 1) {
@@ -90,11 +92,11 @@ window.SheetDatabase = {
   /**
    * Giải mã định dạng CSV từ Google Sheet Publish to Web
    */
-  parseCSV(csvText) {
+  parseCSV(csvText: string): Manga[] {
     const lines = csvText.split(/\r?\n/);
     if (lines.length <= 1) return [];
 
-    const mangaList = [];
+    const mangaList: Manga[] = [];
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i].trim();
       if (!line) continue;
@@ -117,16 +119,13 @@ window.SheetDatabase = {
         }
       }
     }
-    return this.sortCatalogChapters(mangaList);
+    return this.sortCatalogChapters(mangaList) || mangaList;
   },
 
   /**
    * Thêm/Cập nhật truyện vào Google Sheet (Gửi POST request chứa mã bảo mật Admin tới Apps Script Web App)
-   * @param {Object} mangaObj 
-   * @param {string} adminPassword
-   * @returns {Promise<boolean>}
    */
-  async saveMangaToSheet(mangaObj, adminPassword) {
+  async saveMangaToSheet(mangaObj: Manga, adminPassword?: string): Promise<boolean> {
     if (!this.apiUrl) return false;
 
     try {
@@ -157,3 +156,7 @@ window.SheetDatabase = {
     }
   }
 };
+
+if (typeof window !== 'undefined') {
+  window.SheetDatabase = SheetDatabase;
+}

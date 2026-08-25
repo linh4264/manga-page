@@ -2,18 +2,29 @@
   "name": "manga-page",
   "version": "1.0.0",
   "description": "DriveManga - Google Drive Manga Reader Web Application",
-  "main": "index.html",
+  "type": "module",
   "scripts": {
-    "dev": "npx serve -s -p 3000",
-    "start": "npx serve -s -p 3000",
-    "serve": "npx serve -s -p 3000"
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "type-check": "tsc --noEmit"
   },
   "keywords": [
     "manga",
     "reader",
     "pdf",
-    "google-drive"
+    "google-drive",
+    "vite",
+    "typescript"
   ],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^22.13.0",
+    "typescript": "^5.7.3",
+    "vite": "^6.1.0",
+    "vitest": "^3.0.5"
+  }
 }

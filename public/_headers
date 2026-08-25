@@ -1,0 +1,14 @@
+# Cloudflare Pages Caching & Performance Headers
+
+# Static assets (Images, JS, CSS, Fonts) -> Immutable 1 Year Edge Cache
+/styles/*
+  Cache-Control: public, max-age=31536000, immutable
+  Access-Control-Allow-Origin: *
+
+/src/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+  Access-Control-Allow-Origin: *
+
+# HTML Entry -> Must revalidate for immediate updates upon deployment
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate

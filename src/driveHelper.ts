@@ -2,13 +2,14 @@
  * Utility functions for parsing Google Drive links and transforming them into direct displayable image URLs.
  */
 
-window.DriveHelper = {
+import { DriveImageUrls, FolderScanResult } from './types/manga';
+import { SheetDatabase } from './sheetDatabase';
+
+export const DriveHelper = {
   /**
    * Extract a Google Drive File ID from various link formats or raw ID strings.
-   * @param {string} input 
-   * @returns {string|null}
    */
-  extractFileId(input) {
+  extractFileId(input?: string | null): string | null {
     if (!input || typeof input !== 'string') return null;
     const trimmed = input.trim();
 
@@ -34,10 +35,8 @@ window.DriveHelper = {
 
   /**
    * Extract Google Drive Folder ID from a folder link or raw ID
-   * @param {string} input 
-   * @returns {string|null}
    */
-  extractFolderId(input) {
+  extractFolderId(input?: string | null): string | null {
     if (!input || typeof input !== 'string') return null;
     const trimmed = input.trim();
 
@@ -56,16 +55,14 @@ window.DriveHelper = {
 
   /**
    * Lấy danh sách toàn bộ ID ảnh từ thư mục Google Drive qua Google Apps Script
-   * @param {string} folderIdOrUrl
-   * @returns {Promise<{ success: boolean, images?: string[], count?: number, error?: string }>}
    */
-  async fetchFolderImages(folderIdOrUrl) {
+  async fetchFolderImages(folderIdOrUrl: string): Promise<FolderScanResult> {
     const folderId = this.extractFolderId(folderIdOrUrl);
     if (!folderId) {
       return { success: false, error: 'Link thư mục Google Drive không hợp lệ! Vui lòng dán link có dạng: https://drive.google.com/drive/folders/...' };
     }
 
-    const apiUrl = window.SheetDatabase ? window.SheetDatabase.apiUrl : null;
+    const apiUrl = SheetDatabase?.apiUrl || (typeof window !== 'undefined' ? window.SheetDatabase?.apiUrl : null);
     if (!apiUrl) {
       return { success: false, error: 'Chưa kết nối Google Sheet/Apps Script API!' };
     }
@@ -73,9 +70,9 @@ window.DriveHelper = {
     try {
       const response = await fetch(`${apiUrl}?action=getFolderImages&folderId=${encodeURIComponent(folderId)}`);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = await response.json();
+      const data: FolderScanResult = await response.json();
       return data;
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Lỗi lấy ảnh từ thư mục Google Drive:', err);
       return { success: false, error: err.message || 'Không thể kết nối với thư mục Google Drive.' };
     }
@@ -83,14 +80,11 @@ window.DriveHelper = {
 
   /**
    * Parse a batch text input containing multiple Drive links or IDs (one per line or space-separated).
-   * @param {string} rawText 
-   * @returns {string[]} List of valid File IDs extracted
    */
-  parseBatchInput(rawText) {
+  parseBatchInput(rawText?: string | null): string[] {
     if (!rawText) return [];
-    // Split by newlines, commas, or spaces
     const tokens = rawText.split(/[\r\n,\s]+/);
-    const ids = [];
+    const ids: string[] = [];
     for (const token of tokens) {
       const extracted = this.extractFileId(token);
       if (extracted && !ids.includes(extracted)) {
@@ -103,11 +97,8 @@ window.DriveHelper = {
   /**
    * Get direct displayable image URLs for a Google Drive File ID.
    * Returns primary Edge CDN proxy, Google UserContent CDN link, and alternative fallback links.
-   * @param {string} fileId 
-   * @param {number} [width] Optional width target for thumbnail optimization (e.g. 500 for covers)
-   * @returns {{ edgeProxy: string|null, primary: string, fallback1: string, fallback2: string, fallback3: string }}
    */
-  getImageUrls(fileId, width = null) {
+  getImageUrls(fileId?: string | null, width: number | null = null): DriveImageUrls {
     if (!fileId) return { edgeProxy: null, primary: '', fallback1: '', fallback2: '', fallback3: '' };
     const cleanId = this.extractFileId(fileId) || fileId;
     const sizeParam = width ? `=w${width}` : '';
@@ -128,11 +119,9 @@ window.DriveHelper = {
 
   /**
    * Attach error-recovery listener to an image element to try multi-tier CDN fallbacks if loading fails.
-   * @param {HTMLImageElement} imgElement 
-   * @param {string} fileId 
-   * @param {number} [targetWidth] Optional target width for image optimization
    */
-  attachImageFallback(imgElement, fileId, targetWidth = null) {
+  attachImageFallback(imgElement: HTMLImageElement, fileId?: string | null, targetWidth: number | null = null): void {
+    if (!fileId) return;
     const urls = this.getImageUrls(fileId, targetWidth);
     imgElement.decoding = 'async';
 
@@ -143,7 +132,7 @@ window.DriveHelper = {
       urls.fallback1,
       urls.fallback2,
       urls.fallback3
-    ].filter(Boolean);
+    ].filter(Boolean) as string[];
 
     let currentIndex = 0;
     imgElement.src = candidateSources[0];
@@ -160,3 +149,7 @@ window.DriveHelper = {
     };
   }
 };
+
+if (typeof window !== 'undefined') {
+  window.DriveHelper = DriveHelper;
+}

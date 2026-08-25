@@ -1,16 +1,25 @@
-window.ImportModalComponent = class ImportModalComponent {
-  constructor(appState, onMangaAdded) {
+/**
+ * Import Modal: Create and import new manga from Google Drive folders, batch images, or PDF.
+ */
+
+import { Manga } from '../types/manga';
+import { DriveHelper } from '../driveHelper';
+
+export class ImportModalComponent {
+  state: any;
+  onMangaAdded?: (manga: Manga) => void;
+  modalOverlay: HTMLElement | null = null;
+  currentSourceType: 'folder' | 'images' | 'pdf' = 'folder';
+  scannedPages: string[] = [];
+  isSubmitting = false;
+
+  constructor(appState: any, onMangaAdded?: (manga: Manga) => void) {
     this.state = appState;
     this.onMangaAdded = onMangaAdded;
-    this.modalOverlay = null;
-    this.currentSourceType = 'folder'; // 'folder' | 'images' | 'pdf'
-    this.scannedPages = [];
-
     this.initModalDOM();
   }
 
-  initModalDOM() {
-    // Create modal wrapper in body
+  initModalDOM(): void {
     this.modalOverlay = document.createElement('div');
     this.modalOverlay.className = 'modal-overlay hidden';
     this.modalOverlay.id = 'import-modal-overlay';
@@ -113,7 +122,7 @@ window.ImportModalComponent = class ImportModalComponent {
           </div>
 
           <div class="modal-footer-row">
-            <button type="button" id="btn-export-catalog" class="btn-secondary" title="Tải về file sampleManga.js để đè vào dự án trước khi deploy">
+            <button type="button" id="btn-export-catalog" class="btn-secondary" title="Tải về file sampleManga.ts để đè vào dự án trước khi deploy">
               <i class="fas fa-download" style="color: #818cf8;"></i> Xuất File Dữ Liệu
             </button>
 
@@ -129,23 +138,29 @@ window.ImportModalComponent = class ImportModalComponent {
     document.body.appendChild(this.modalOverlay);
 
     // Bind Source Tabs Switcher
-    this.modalOverlay.querySelectorAll('.btn-import-source-tab').forEach(btn => {
+    this.modalOverlay.querySelectorAll('.btn-import-source-tab').forEach(btnEl => {
+      const btn = btnEl as HTMLElement;
       btn.addEventListener('click', () => {
-        this.modalOverlay.querySelectorAll('.btn-import-source-tab').forEach(b => {
-          b.classList.remove('active');
-          b.style.background = 'transparent';
-          b.style.color = 'var(--text-secondary)';
+        this.modalOverlay?.querySelectorAll('.btn-import-source-tab').forEach(b => {
+          const el = b as HTMLElement;
+          el.classList.remove('active');
+          el.style.background = 'transparent';
+          el.style.color = 'var(--text-secondary)';
         });
         btn.classList.add('active');
         btn.style.background = 'rgba(99, 102, 241, 0.2)';
         btn.style.color = '#ffffff';
 
-        const source = btn.dataset.source;
+        const source = btn.dataset.source as 'folder' | 'images' | 'pdf';
         this.currentSourceType = source;
 
-        document.getElementById('import-box-folder').style.display = source === 'folder' ? 'block' : 'none';
-        document.getElementById('import-box-images').style.display = source === 'images' ? 'block' : 'none';
-        document.getElementById('import-box-pdf').style.display = source === 'pdf' ? 'block' : 'none';
+        const boxFolder = document.getElementById('import-box-folder');
+        const boxImages = document.getElementById('import-box-images');
+        const boxPdf = document.getElementById('import-box-pdf');
+
+        if (boxFolder) boxFolder.style.display = source === 'folder' ? 'block' : 'none';
+        if (boxImages) boxImages.style.display = source === 'images' ? 'block' : 'none';
+        if (boxPdf) boxPdf.style.display = source === 'pdf' ? 'block' : 'none';
       });
     });
 
@@ -154,20 +169,20 @@ window.ImportModalComponent = class ImportModalComponent {
     document.getElementById('import-folder-url')?.addEventListener('change', () => this.handleScanFolder());
 
     // Event listeners
-    document.getElementById('btn-close-import-modal').addEventListener('click', () => this.close());
-    document.getElementById('btn-cancel-import').addEventListener('click', () => this.close());
+    document.getElementById('btn-close-import-modal')?.addEventListener('click', () => this.close());
+    document.getElementById('btn-cancel-import')?.addEventListener('click', () => this.close());
     document.getElementById('btn-export-catalog')?.addEventListener('click', () => this.exportCatalogFile());
 
-    document.getElementById('import-manga-form').addEventListener('submit', (e) => {
+    document.getElementById('import-manga-form')?.addEventListener('submit', (e) => {
       e.preventDefault();
       this.handleFormSubmit();
     });
   }
 
-  async handleScanFolder() {
-    const folderInput = document.getElementById('import-folder-url').value.trim();
+  async handleScanFolder(): Promise<void> {
+    const folderInput = (document.getElementById('import-folder-url') as HTMLInputElement | null)?.value.trim() || '';
     const statusEl = document.getElementById('import-folder-scan-status');
-    const scanBtn = document.getElementById('btn-scan-import-folder');
+    const scanBtn = document.getElementById('btn-scan-import-folder') as HTMLButtonElement | null;
 
     if (!folderInput) {
       if (statusEl) {
@@ -186,7 +201,7 @@ window.ImportModalComponent = class ImportModalComponent {
       statusEl.innerHTML = '<span style="color: #818cf8;"><i class="fas fa-spinner fa-spin"></i> Đang quét toàn bộ ảnh trong thư mục...</span>';
     }
 
-    const res = await window.DriveHelper.fetchFolderImages(folderInput);
+    const res = await DriveHelper.fetchFolderImages(folderInput);
     if (scanBtn) {
       scanBtn.disabled = false;
       scanBtn.innerHTML = '<i class="fas fa-search"></i> Quét Lại';
@@ -205,35 +220,35 @@ window.ImportModalComponent = class ImportModalComponent {
     }
   }
 
-  open() {
+  open(): void {
     this.scannedPages = [];
     const statusEl = document.getElementById('import-folder-scan-status');
     if (statusEl) statusEl.style.display = 'none';
-    this.modalOverlay.classList.remove('hidden');
+    this.modalOverlay?.classList.remove('hidden');
   }
 
-  close() {
-    this.modalOverlay.classList.add('hidden');
-    document.getElementById('import-manga-form').reset();
+  close(): void {
+    this.modalOverlay?.classList.add('hidden');
+    (document.getElementById('import-manga-form') as HTMLFormElement | null)?.reset();
   }
 
-  async handleFormSubmit() {
-    if (this.isSubmitting) return;
+  async handleFormSubmit(): Promise<void> {
+    if (this.isSubmitting || !this.modalOverlay) return;
 
-    const title = document.getElementById('import-title').value.trim();
-    const author = document.getElementById('import-author').value.trim() || 'Tác giả chưa cập nhật';
-    const genresInput = document.getElementById('import-genres').value.trim();
-    const coverInput = document.getElementById('import-cover').value.trim();
-    const description = document.getElementById('import-description').value.trim();
-    const chapterTitle = document.getElementById('import-chapter-title').value.trim();
-    const adminPassword = document.getElementById('import-admin-password').value.trim();
+    const title = (document.getElementById('import-title') as HTMLInputElement).value.trim();
+    const author = (document.getElementById('import-author') as HTMLInputElement).value.trim() || 'Tác giả chưa cập nhật';
+    const genresInput = (document.getElementById('import-genres') as HTMLInputElement).value.trim();
+    const coverInput = (document.getElementById('import-cover') as HTMLInputElement).value.trim();
+    const description = (document.getElementById('import-description') as HTMLTextAreaElement).value.trim();
+    const chapterTitle = (document.getElementById('import-chapter-title') as HTMLInputElement).value.trim();
+    const adminPassword = (document.getElementById('import-admin-password') as HTMLInputElement).value.trim();
 
-    let pages = [];
+    let pages: string[] = [];
     let pdfUrl = '';
     let isPdf = false;
 
     if (this.currentSourceType === 'folder') {
-      const folderUrl = document.getElementById('import-folder-url').value.trim();
+      const folderUrl = (document.getElementById('import-folder-url') as HTMLInputElement).value.trim();
       if (!folderUrl) {
         alert('Vui lòng dán link Thư mục Google Drive!');
         return;
@@ -242,7 +257,7 @@ window.ImportModalComponent = class ImportModalComponent {
       if (this.scannedPages.length > 0) {
         pages = this.scannedPages;
       } else {
-        const res = await window.DriveHelper.fetchFolderImages(folderUrl);
+        const res = await DriveHelper.fetchFolderImages(folderUrl);
         if (res && res.success && res.images && res.images.length > 0) {
           pages = res.images;
         } else {
@@ -251,14 +266,14 @@ window.ImportModalComponent = class ImportModalComponent {
         }
       }
     } else if (this.currentSourceType === 'images') {
-      const imagesText = document.getElementById('import-images-text').value.trim();
-      pages = window.DriveHelper.parseBatchInput(imagesText);
+      const imagesText = (document.getElementById('import-images-text') as HTMLTextAreaElement).value.trim();
+      pages = DriveHelper.parseBatchInput(imagesText);
       if (pages.length === 0) {
         alert('Vui lòng dán ít nhất 1 link hoặc File ID ảnh!');
         return;
       }
     } else if (this.currentSourceType === 'pdf') {
-      pdfUrl = document.getElementById('import-pdf-url').value.trim();
+      pdfUrl = (document.getElementById('import-pdf-url') as HTMLInputElement).value.trim();
       if (!pdfUrl) {
         alert('Vui lòng dán đường dẫn tệp PDF Google Drive hoặc PDF URL!');
         return;
@@ -272,7 +287,7 @@ window.ImportModalComponent = class ImportModalComponent {
       return;
     }
 
-    const submitBtn = this.modalOverlay.querySelector('button[type="submit"]');
+    const submitBtn = this.modalOverlay.querySelector('button[type="submit"]') as HTMLButtonElement | null;
     if (submitBtn) {
       submitBtn.disabled = true;
       submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang đăng...';
@@ -282,15 +297,15 @@ window.ImportModalComponent = class ImportModalComponent {
     try {
       const defaultGenres = ['Google Drive', 'Webtoon'];
 
-      const newManga = {
+      const newManga: Manga = {
         id: 'custom-' + Date.now(),
         title: title,
         originalTitle: title,
         author: author,
         artist: author,
         status: 'Đang tiến hành',
-        coverUrl: coverInput && !window.DriveHelper.extractFileId(coverInput) ? coverInput : '',
-        coverDriveId: window.DriveHelper.extractFileId(coverInput) || '',
+        coverUrl: coverInput && !DriveHelper.extractFileId(coverInput) ? coverInput : '',
+        coverDriveId: DriveHelper.extractFileId(coverInput) || '',
         description: description || 'Bộ truyện được tạo từ Google Drive.',
         genres: genresInput ? genresInput.split(',').map(g => g.trim()) : defaultGenres,
         rating: 5.0,
@@ -322,20 +337,24 @@ window.ImportModalComponent = class ImportModalComponent {
     }
   }
 
-  exportCatalogFile() {
+  exportCatalogFile(): void {
     const allManga = this.state.getAllManga();
-    const fileContent = `/**\n * Manga Catalog Database for Public Deployment.\n * Formatted automatically for DriveManga.\n */\n\nwindow.SAMPLE_MANGA_DATA = ${JSON.stringify(allManga, null, 2)};\n`;
+    const fileContent = `/**\n * Manga Catalog Database for Public Deployment.\n * Formatted automatically for DriveManga.\n */\n\nimport { Manga } from '../types/manga';\n\nexport const SAMPLE_MANGA_DATA: Manga[] = ${JSON.stringify(allManga, null, 2)};\n\nif (typeof window !== 'undefined') {\n  window.SAMPLE_MANGA_DATA = SAMPLE_MANGA_DATA;\n}\n`;
     
-    const blob = new Blob([fileContent], { type: 'text/javascript' });
+    const blob = new Blob([fileContent], { type: 'text/typescript' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'sampleManga.js';
+    a.download = 'sampleManga.ts';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     
-    alert('Đã tải tệp sampleManga.js mới về máy! Bạn chỉ cần thay tệp này vào thư mục src/data/sampleManga.js trong dự án rồi push/deploy lên GitHub/Vercel để mọi người cùng xem.');
+    alert('Đã xuất tệp sampleManga.ts thành công! Bạn có thể lưu vào thư mục src/data/sampleManga.ts để làm dữ liệu offline mặc định.');
   }
+}
+
+if (typeof window !== 'undefined') {
+  window.ImportModalComponent = ImportModalComponent;
 }

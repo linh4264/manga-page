@@ -1,7 +1,33 @@
-class MangaApp {
+/**
+ * Main Application Entry Point for DriveManga
+ */
+
+import { Manga, CommentItem, ReadingHistoryItem } from './types/manga';
+import { SAMPLE_MANGA_DATA } from './data/sampleManga';
+import { SheetDatabase } from './sheetDatabase';
+import { AppRouter } from './router';
+import { LibraryComponent } from './components/library';
+import { ReaderComponent } from './components/reader';
+import { ImportModalComponent } from './components/importModal';
+import { AddChapterModalComponent } from './components/addChapterModal';
+import { EditChapterModalComponent } from './components/editChapterModal';
+import { EditMangaModalComponent } from './components/editMangaModal';
+
+export class MangaApp {
+  customMangaList: Manga[];
+  sheetMangaList: Manga[];
+  
+  libraryComponent!: LibraryComponent;
+  readerComponent!: ReaderComponent;
+  importModalComponent!: ImportModalComponent;
+  addChapterModalComponent!: AddChapterModalComponent;
+  editChapterModalComponent!: EditChapterModalComponent;
+  editMangaModalComponent!: EditMangaModalComponent;
+  router!: AppRouter;
+
   constructor() {
     this.customMangaList = JSON.parse(localStorage.getItem('custom_manga_list') || '[]');
-    let cached = [];
+    let cached: Manga[] = [];
     try {
       cached = JSON.parse(localStorage.getItem('sheet_manga_cache') || '[]');
     } catch (e) {
@@ -9,14 +35,10 @@ class MangaApp {
     }
     this.sheetMangaList = cached;
     
-    this.libraryComponent = null;
-    this.readerComponent = null;
-    this.importModalComponent = null;
-
     this.init();
   }
 
-  getAllManga() {
+  getAllManga(): Manga[] {
     // 1. Ưu tiên dữ liệu tải từ Google Sheet trong phiên hiện tại
     if (this.sheetMangaList && this.sheetMangaList.length > 0) {
       return this.sheetMangaList;
@@ -29,18 +51,18 @@ class MangaApp {
       }
     } catch (e) {}
     // 3. Dự phòng danh mục tĩnh sampleManga khi mất mạng hoặc API Google Sheet nghẽn
-    return window.SAMPLE_MANGA_DATA || [];
+    return SAMPLE_MANGA_DATA || [];
   }
 
-  isBookmarked(mangaId) {
+  isBookmarked(mangaId: string): boolean {
     if (!mangaId) return false;
-    const bookmarks = JSON.parse(localStorage.getItem('manga_bookmarks') || '[]');
+    const bookmarks: string[] = JSON.parse(localStorage.getItem('manga_bookmarks') || '[]');
     return bookmarks.includes(mangaId);
   }
 
-  toggleBookmark(mangaId) {
+  toggleBookmark(mangaId: string): boolean {
     if (!mangaId) return false;
-    let bookmarks = JSON.parse(localStorage.getItem('manga_bookmarks') || '[]');
+    let bookmarks: string[] = JSON.parse(localStorage.getItem('manga_bookmarks') || '[]');
     const isBookmarked = bookmarks.includes(mangaId);
     if (isBookmarked) {
       bookmarks = bookmarks.filter(id => id !== mangaId);
@@ -51,10 +73,10 @@ class MangaApp {
     return !isBookmarked;
   }
 
-  saveReadingHistory(mangaId, chapterId, chapterTitle) {
+  saveReadingHistory(mangaId: string, chapterId: string, chapterTitle: string): void {
     if (!mangaId) return;
     try {
-      const history = JSON.parse(localStorage.getItem('reading_history') || '{}');
+      const history: Record<string, ReadingHistoryItem> = JSON.parse(localStorage.getItem('reading_history') || '{}');
       history[mangaId] = {
         chapterId: chapterId,
         chapterTitle: chapterTitle,
@@ -64,30 +86,30 @@ class MangaApp {
     } catch (e) {}
   }
 
-  getReadingHistory(mangaId) {
+  getReadingHistory(mangaId: string): ReadingHistoryItem | null {
     if (!mangaId) return null;
     try {
-      const history = JSON.parse(localStorage.getItem('reading_history') || '{}');
+      const history: Record<string, ReadingHistoryItem> = JSON.parse(localStorage.getItem('reading_history') || '{}');
       return history[mangaId] || null;
     } catch (e) {
       return null;
     }
   }
 
-  getComments(chapterId) {
+  getComments(chapterId: string): CommentItem[] {
     if (!chapterId) return [];
     try {
-      const allComments = JSON.parse(localStorage.getItem('chapter_comments') || '{}');
+      const allComments: Record<string, CommentItem[]> = JSON.parse(localStorage.getItem('chapter_comments') || '{}');
       return allComments[chapterId] || [];
     } catch (e) {
       return [];
     }
   }
 
-  addComment(chapterId, author, text) {
+  addComment(chapterId: string, author: string, text: string): void {
     if (!chapterId || !text) return;
     try {
-      const allComments = JSON.parse(localStorage.getItem('chapter_comments') || '{}');
+      const allComments: Record<string, CommentItem[]> = JSON.parse(localStorage.getItem('chapter_comments') || '{}');
       if (!allComments[chapterId]) allComments[chapterId] = [];
       allComments[chapterId].unshift({
         author: author || 'Độc giả',
@@ -98,9 +120,9 @@ class MangaApp {
     } catch (e) {}
   }
 
-  async addCustomManga(mangaObj, adminPassword) {
-    if (window.SheetDatabase && window.SheetDatabase.apiUrl) {
-      await window.SheetDatabase.saveMangaToSheet(mangaObj, adminPassword);
+  async addCustomManga(mangaObj: Manga, adminPassword?: string): Promise<void> {
+    if (SheetDatabase && SheetDatabase.apiUrl) {
+      await SheetDatabase.saveMangaToSheet(mangaObj, adminPassword);
       alert('✅ Đã đăng truyện thành công lên Google Sheet!');
       setTimeout(() => {
         this.syncGoogleSheetData(true);
@@ -110,9 +132,9 @@ class MangaApp {
     }
   }
 
-  async updateManga(mangaObj, adminPassword) {
-    if (window.SheetDatabase && window.SheetDatabase.apiUrl) {
-      await window.SheetDatabase.saveMangaToSheet(mangaObj, adminPassword);
+  async updateManga(mangaObj: Manga, adminPassword?: string): Promise<void> {
+    if (SheetDatabase && SheetDatabase.apiUrl) {
+      await SheetDatabase.saveMangaToSheet(mangaObj, adminPassword);
       alert('✅ Đã lưu thay đổi thành công lên Google Sheet!');
       setTimeout(() => {
         this.syncGoogleSheetData(true);
@@ -122,35 +144,35 @@ class MangaApp {
     }
   }
 
-  openAddChapterModal(manga) {
+  openAddChapterModal(manga: Manga): void {
     if (this.addChapterModalComponent) {
       this.addChapterModalComponent.open(manga);
     }
   }
 
-  openEditChapterModal(manga, chapter) {
+  openEditChapterModal(manga: Manga, chapter: any): void {
     if (this.editChapterModalComponent) {
       this.editChapterModalComponent.open(manga, chapter);
     }
   }
 
-  openEditMangaModal(manga) {
+  openEditMangaModal(manga: Manga): void {
     if (this.editMangaModalComponent) {
       this.editMangaModalComponent.open(manga);
     }
   }
 
-  async init() {
+  async init(): Promise<void> {
     // Initialize components
-    this.readerComponent = new window.ReaderComponent(this);
+    this.readerComponent = new ReaderComponent(this);
 
-    this.libraryComponent = new window.LibraryComponent(
+    this.libraryComponent = new LibraryComponent(
       this,
       (manga) => this.libraryComponent.showDetailView(manga),
       (manga, chapterId) => this.readerComponent.open(manga, chapterId)
     );
 
-    this.importModalComponent = new window.ImportModalComponent(
+    this.importModalComponent = new ImportModalComponent(
       this,
       (newManga) => {
         this.libraryComponent.renderCatalog();
@@ -158,21 +180,21 @@ class MangaApp {
       }
     );
 
-    this.addChapterModalComponent = new window.AddChapterModalComponent(
+    this.addChapterModalComponent = new AddChapterModalComponent(
       this,
-      (manga, newChapter) => {
+      (manga) => {
         this.libraryComponent.showDetailView(manga);
       }
     );
 
-    this.editChapterModalComponent = new window.EditChapterModalComponent(
+    this.editChapterModalComponent = new EditChapterModalComponent(
       this,
-      (manga, updatedChapter) => {
+      (manga) => {
         this.libraryComponent.showDetailView(manga);
       }
     );
 
-    this.editMangaModalComponent = new window.EditMangaModalComponent(
+    this.editMangaModalComponent = new EditMangaModalComponent(
       this,
       (updatedManga) => {
         this.libraryComponent.renderCatalog();
@@ -181,15 +203,15 @@ class MangaApp {
     );
 
     // Initialize SPA Router
-    this.router = new window.AppRouter(this);
+    this.router = new AppRouter(this);
 
     // Bind Header Buttons
     document.getElementById('brand-home-link')?.addEventListener('click', () => {
       if (this.router) {
         this.router.goHome();
       } else {
-        document.getElementById('detail-view').classList.add('hidden');
-        document.getElementById('library-view').classList.remove('hidden');
+        document.getElementById('detail-view')?.classList.add('hidden');
+        document.getElementById('library-view')?.classList.remove('hidden');
         this.libraryComponent.renderCatalog();
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
@@ -204,21 +226,22 @@ class MangaApp {
     });
 
     document.getElementById('btn-open-config-sheet')?.addEventListener('click', () => {
-      const currentUrl = window.SheetDatabase.apiUrl;
+      const currentUrl = SheetDatabase.apiUrl;
       const inputUrl = prompt(
         'Nhập Web App URL của Google Apps Script (dùng Google Sheet làm Database):\n\nVí dụ: https://script.google.com/macros/s/AKfycbx.../exec',
         currentUrl
       );
       if (inputUrl !== null) {
-        window.SheetDatabase.setApiUrl(inputUrl);
+        SheetDatabase.setApiUrl(inputUrl);
         alert('Đã lưu URL Google Apps Script! Trang web sẽ tự động đồng bộ dữ liệu với Google Sheet.');
         this.syncGoogleSheetData(true);
       }
     });
 
     // Keyboard shortcut '/' for search focusing
-    window.addEventListener('keydown', (e) => {
-      if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+    window.addEventListener('keydown', (e: KeyboardEvent) => {
+      const activeTag = (document.activeElement as HTMLElement)?.tagName;
+      if (e.key === '/' && activeTag !== 'INPUT' && activeTag !== 'TEXTAREA') {
         e.preventDefault();
         const searchInput = document.getElementById('search-input');
         if (searchInput) searchInput.focus();
@@ -232,15 +255,15 @@ class MangaApp {
     this.syncGoogleSheetData(false);
   }
 
-  async syncGoogleSheetData(force = false) {
+  async syncGoogleSheetData(force = false): Promise<void> {
     const syncIcon = document.getElementById('icon-sync-data');
     if (syncIcon) syncIcon.classList.add('fa-spin');
 
     const now = Date.now();
 
-    if (window.SheetDatabase && window.SheetDatabase.apiUrl) {
+    if (SheetDatabase && SheetDatabase.apiUrl) {
       try {
-        const liveData = await window.SheetDatabase.fetchMangaCatalog();
+        const liveData = await SheetDatabase.fetchMangaCatalog();
         if (liveData && liveData.length > 0) {
           this.sheetMangaList = liveData;
           try {
@@ -273,6 +296,8 @@ class MangaApp {
 }
 
 // Instantiate App when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-  window.app = new MangaApp();
-});
+if (typeof document !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', () => {
+    (window as any).app = new MangaApp();
+  });
+}

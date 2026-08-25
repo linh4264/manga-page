@@ -3,7 +3,9 @@
  * Users can read these out-of-the-box or add their custom manga via Google Drive.
  */
 
-window.SAMPLE_MANGA_DATA = [
+import { Manga } from '../types/manga';
+
+export const SAMPLE_MANGA_DATA: Manga[] = [
   {
     id: 'solo-leveling',
     title: 'Solo Leveling (Tôi Thăng Cấp Một Mình)',
@@ -109,7 +111,6 @@ window.SAMPLE_MANGA_DATA = [
         id: 'chap-1',
         title: 'Chương 1: Kiểm thử Google Drive CDN',
         updatedAt: '2026-08-12',
-        // Drive IDs or URLs will be processed seamlessly by DriveHelper
         pages: [
           '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
           'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=1000&auto=format&fit=crop&q=80',
@@ -151,3 +152,7 @@ window.SAMPLE_MANGA_DATA = [
     ]
   }
 ];
+
+if (typeof window !== 'undefined') {
+  window.SAMPLE_MANGA_DATA = SAMPLE_MANGA_DATA;
+}

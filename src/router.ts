@@ -3,13 +3,23 @@
  * with hash fallback (/#/:id and /#/:id/:chapterId) for static file hosting compatibility.
  */
 
-window.AppRouter = class AppRouter {
-  constructor(app) {
+import { Manga } from './types/manga';
+
+export interface AppInstance {
+  getAllManga: () => Manga[];
+  libraryComponent?: any;
+  readerComponent?: any;
+}
+
+export class AppRouter {
+  app: AppInstance;
+
+  constructor(app: AppInstance) {
     this.app = app;
     this.init();
   }
 
-  init() {
+  init(): void {
     window.addEventListener('popstate', () => this.handleRoute());
     window.addEventListener('hashchange', () => this.handleRoute());
   }
@@ -17,7 +27,7 @@ window.AppRouter = class AppRouter {
   /**
    * Get clean path parts array: [] for home, [mangaId] for detail, [mangaId, chapterId] for reader
    */
-  getRouteParts() {
+  getRouteParts(): string[] {
     let rawPath = '';
     
     // Check hash route first if available
@@ -41,9 +51,8 @@ window.AppRouter = class AppRouter {
 
   /**
    * Update browser address bar using Hash Routing (/#/:id and /#/:id/:chapterId)
-   * to guarantee ZERO 404 errors when reloading (F5) on any static web server or host.
    */
-  pushRoute(path) {
+  pushRoute(path: string): void {
     const targetPath = path.startsWith('/') ? path : '/' + path;
     window.location.hash = '#' + targetPath;
   }
@@ -51,7 +60,7 @@ window.AppRouter = class AppRouter {
   /**
    * Navigate to Home
    */
-  goHome() {
+  goHome(): void {
     this.pushRoute('/');
     this.handleRoute();
   }
@@ -59,14 +68,14 @@ window.AppRouter = class AppRouter {
   /**
    * Alias to goHome
    */
-  goLibrary() {
+  goLibrary(): void {
     this.goHome();
   }
 
   /**
    * Navigate to Manga DetailView (/:mangaId)
    */
-  goManga(mangaId) {
+  goManga(mangaId: string): void {
     if (!mangaId) return;
     this.pushRoute(`/${mangaId}`);
     this.handleRoute();
@@ -75,7 +84,7 @@ window.AppRouter = class AppRouter {
   /**
    * Navigate to Chapter Reader (/:mangaId/:chapterId)
    */
-  goChapter(mangaId, chapterId) {
+  goChapter(mangaId: string, chapterId: string): void {
     if (!mangaId || !chapterId) return;
     this.pushRoute(`/${mangaId}/${chapterId}`);
     this.handleRoute();
@@ -84,7 +93,7 @@ window.AppRouter = class AppRouter {
   /**
    * Parse current URL and render the target view
    */
-  handleRoute() {
+  handleRoute(): void {
     const parts = this.getRouteParts();
     const allManga = this.app.getAllManga();
 
@@ -92,7 +101,7 @@ window.AppRouter = class AppRouter {
       // Route / -> Show Catalog
       document.body.classList.remove('is-webtoon-reading');
       document.documentElement.classList.remove('is-webtoon-reading');
-      document.body.style.overflow = ''; // Mở lại thanh cuộn chính của trang web
+      document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
       document.getElementById('reader-wrapper')?.classList.add('hidden');
       document.getElementById('detail-view')?.classList.add('hidden');
@@ -127,7 +136,7 @@ window.AppRouter = class AppRouter {
       // Route /:id -> Show Detail View
       document.body.classList.remove('is-webtoon-reading');
       document.documentElement.classList.remove('is-webtoon-reading');
-      document.body.style.overflow = ''; // Mở lại thanh cuộn chính của trang web
+      document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
       document.getElementById('reader-wrapper')?.classList.add('hidden');
       document.getElementById('library-view')?.classList.add('hidden');
@@ -135,7 +144,7 @@ window.AppRouter = class AppRouter {
       document.querySelector('.view-container')?.classList.remove('hidden');
       document.querySelector('.app-header')?.classList.remove('hidden');
       if (this.app.libraryComponent) {
-        this.app.libraryComponent.showDetailView(targetManga, false); // false = don't push state again
+        this.app.libraryComponent.showDetailView(targetManga, false);
       }
     } else if (parts.length >= 2) {
       // Route /:id/:chapterId -> Show Reader View
@@ -145,8 +154,12 @@ window.AppRouter = class AppRouter {
       document.querySelector('.view-container')?.classList.add('hidden');
       document.querySelector('.app-header')?.classList.add('hidden');
       if (this.app.readerComponent) {
-        this.app.readerComponent.open(targetManga, chapterId, false); // false = don't push state again
+        this.app.readerComponent.open(targetManga, chapterId, false);
       }
     }
   }
-};
+}
+
+if (typeof window !== 'undefined') {
+  window.AppRouter = AppRouter;
+}

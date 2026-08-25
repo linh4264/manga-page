@@ -3,22 +3,22 @@
  * using Mozilla PDF.js and Google Drive Embed Fallbacks.
  */
 
-window.PdfHelper = {
+import { DriveHelper } from './driveHelper';
+
+export const PdfHelper = {
   /**
    * Initialize PDF.js worker configuration if available
    */
-  initWorker() {
-    if (window.pdfjsLib && !window.pdfjsLib.GlobalWorkerOptions.workerSrc) {
+  initWorker(): void {
+    if (typeof window !== 'undefined' && window.pdfjsLib && !window.pdfjsLib.GlobalWorkerOptions?.workerSrc) {
       window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     }
   },
 
   /**
    * Check if a string is a PDF URL or Google Drive PDF link/ID
-   * @param {string} input 
-   * @returns {boolean}
    */
-  isPdfSource(input) {
+  isPdfSource(input?: string | null): boolean {
     if (!input || typeof input !== 'string') return false;
     const lower = input.toLowerCase();
     if (lower.endsWith('.pdf') || lower.includes('.pdf?') || lower.includes('/pdf') || input.startsWith('data:application/pdf')) {
@@ -26,7 +26,7 @@ window.PdfHelper = {
     }
     // Check if string contains drive.google.com and has a valid file ID
     if (lower.includes('drive.google.com') || lower.includes('docs.google.com')) {
-      const fileId = window.DriveHelper ? window.DriveHelper.extractFileId(input) : null;
+      const fileId = DriveHelper.extractFileId(input);
       return !!fileId;
     }
     return false;
@@ -34,32 +34,25 @@ window.PdfHelper = {
 
   /**
    * Get direct download/fetch URL for a Google Drive PDF File ID
-   * @param {string} fileId 
-   * @returns {string}
    */
-  getDrivePdfDownloadUrl(fileId) {
-    const cleanId = window.DriveHelper ? window.DriveHelper.extractFileId(fileId) || fileId : fileId;
+  getDrivePdfDownloadUrl(fileId: string): string {
+    const cleanId = DriveHelper.extractFileId(fileId) || fileId;
     return `https://drive.google.com/uc?export=download&id=${cleanId}`;
   },
 
   /**
    * Get Google Drive PDF Embedded Preview URL
-   * @param {string} fileId 
-   * @returns {string}
    */
-  getDrivePdfEmbedUrl(fileId) {
-    const cleanId = window.DriveHelper ? window.DriveHelper.extractFileId(fileId) || fileId : fileId;
+  getDrivePdfEmbedUrl(fileId: string): string {
+    const cleanId = DriveHelper.extractFileId(fileId) || fileId;
     return `https://drive.google.com/file/d/${cleanId}/preview`;
   },
 
   /**
    * Render tệp PDF trực tiếp bằng Google Drive PDF Embedded Viewer Iframe chuẩn.
-   * @param {string} pdfSource (URL hoặc File ID)
-   * @param {HTMLElement} container 
-   * @param {Function} onProgress callback
    */
-  renderPdfToContainer(pdfSource, container, onProgress) {
-    const fileId = window.DriveHelper ? window.DriveHelper.extractFileId(pdfSource) || pdfSource : pdfSource;
+  renderPdfToContainer(pdfSource: string, container: HTMLElement, onProgress?: (totalPages: number) => void): void {
+    const fileId = DriveHelper.extractFileId(pdfSource) || pdfSource;
     const embedUrl = (fileId && !fileId.startsWith('http')) ? this.getDrivePdfEmbedUrl(fileId) : pdfSource;
 
     container.innerHTML = `
@@ -69,3 +62,7 @@ window.PdfHelper = {
     if (onProgress) onProgress(1);
   }
 };
+
+if (typeof window !== 'undefined') {
+  window.PdfHelper = PdfHelper;
+}

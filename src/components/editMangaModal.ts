@@ -3,17 +3,23 @@
  * Tự động cập nhật và lưu trực tiếp lên Google Sheet Database.
  */
 
-window.EditMangaModalComponent = class EditMangaModalComponent {
-  constructor(appState, onMangaUpdated) {
+import { Manga } from '../types/manga';
+import { DriveHelper } from '../driveHelper';
+
+export class EditMangaModalComponent {
+  state: any;
+  onMangaUpdated?: (manga: Manga) => void;
+  targetManga: Manga | null = null;
+  modalOverlay: HTMLElement | null = null;
+  isSubmitting = false;
+
+  constructor(appState: any, onMangaUpdated?: (manga: Manga) => void) {
     this.state = appState;
     this.onMangaUpdated = onMangaUpdated;
-    this.targetManga = null;
-    this.modalOverlay = null;
-
     this.initModalDOM();
   }
 
-  initModalDOM() {
+  initModalDOM(): void {
     this.modalOverlay = document.createElement('div');
     this.modalOverlay.className = 'modal-overlay hidden';
     this.modalOverlay.id = 'edit-manga-modal-overlay';
@@ -76,32 +82,32 @@ window.EditMangaModalComponent = class EditMangaModalComponent {
     document.body.appendChild(this.modalOverlay);
 
     // Event Listeners
-    document.getElementById('btn-close-edit-manga-modal').addEventListener('click', () => this.close());
-    document.getElementById('btn-cancel-edit-manga-modal').addEventListener('click', () => this.close());
-    document.getElementById('edit-manga-form').addEventListener('submit', (e) => this.handleSubmit(e));
+    document.getElementById('btn-close-edit-manga-modal')?.addEventListener('click', () => this.close());
+    document.getElementById('btn-cancel-edit-manga-modal')?.addEventListener('click', () => this.close());
+    document.getElementById('edit-manga-form')?.addEventListener('submit', (e) => this.handleSubmit(e));
 
     // Live preview listener on input
-    const coverInput = document.getElementById('edit-manga-cover-url');
-    coverInput.addEventListener('input', () => this.updateLivePreview(coverInput.value));
+    const coverInput = document.getElementById('edit-manga-cover-url') as HTMLInputElement | null;
+    coverInput?.addEventListener('input', () => this.updateLivePreview(coverInput.value));
   }
 
-  updateLivePreview(inputVal) {
+  updateLivePreview(inputVal?: string): void {
     const previewBox = document.getElementById('edit-manga-preview-box');
-    const previewImg = document.getElementById('edit-manga-preview-img');
+    const previewImg = document.getElementById('edit-manga-preview-img') as HTMLImageElement | null;
     if (!inputVal || !inputVal.trim()) {
       if (previewBox) previewBox.style.display = 'none';
       return;
     }
 
     const val = inputVal.trim();
-    const fileId = window.DriveHelper ? window.DriveHelper.extractFileId(val) : null;
+    const fileId = DriveHelper.extractFileId(val);
 
     if (previewImg && previewBox) {
       previewImg.classList.remove('img-load-error');
       previewBox.style.display = 'block';
 
       if (fileId) {
-        window.DriveHelper.attachImageFallback(previewImg, fileId, 500);
+        DriveHelper.attachImageFallback(previewImg, fileId, 500);
       } else {
         previewImg.src = val;
         previewImg.onerror = () => {
@@ -112,37 +118,43 @@ window.EditMangaModalComponent = class EditMangaModalComponent {
     }
   }
 
-  open(manga) {
+  open(manga: Manga): void {
     if (!manga) return;
     this.targetManga = manga;
 
-    document.getElementById('edit-manga-title').value = manga.title || '';
-    document.getElementById('edit-manga-author').value = manga.author || manga.originalTitle || '';
+    const titleInput = document.getElementById('edit-manga-title') as HTMLInputElement | null;
+    const authorInput = document.getElementById('edit-manga-author') as HTMLInputElement | null;
+    const coverInput = document.getElementById('edit-manga-cover-url') as HTMLInputElement | null;
+    const descInput = document.getElementById('edit-manga-description') as HTMLTextAreaElement | null;
+    const genresInput = document.getElementById('edit-manga-genres') as HTMLInputElement | null;
+    const passInput = document.getElementById('edit-manga-admin-password') as HTMLInputElement | null;
+
+    if (titleInput) titleInput.value = manga.title || '';
+    if (authorInput) authorInput.value = manga.author || manga.originalTitle || '';
     const currentCover = manga.coverUrl || manga.coverDriveId || '';
-    document.getElementById('edit-manga-cover-url').value = currentCover;
-    document.getElementById('edit-manga-description').value = manga.description || '';
-    document.getElementById('edit-manga-genres').value = (manga.genres || []).join(', ');
-    const passInput = document.getElementById('edit-manga-admin-password');
+    if (coverInput) coverInput.value = currentCover;
+    if (descInput) descInput.value = manga.description || '';
+    if (genresInput) genresInput.value = (manga.genres || []).join(', ');
     if (passInput) passInput.value = '';
 
     this.updateLivePreview(currentCover);
-    this.modalOverlay.classList.remove('hidden');
+    this.modalOverlay?.classList.remove('hidden');
   }
 
-  close() {
-    this.modalOverlay.classList.add('hidden');
+  close(): void {
+    this.modalOverlay?.classList.add('hidden');
   }
 
-  async handleSubmit(e) {
+  async handleSubmit(e: Event): Promise<void> {
     e.preventDefault();
     if (this.isSubmitting || !this.targetManga) return;
 
-    const newTitle = document.getElementById('edit-manga-title').value.trim();
-    const newAuthor = document.getElementById('edit-manga-author').value.trim();
-    const newCoverInput = document.getElementById('edit-manga-cover-url').value.trim();
-    const newDesc = document.getElementById('edit-manga-description').value.trim();
-    const genresInput = document.getElementById('edit-manga-genres').value.trim();
-    const adminPassword = document.getElementById('edit-manga-admin-password').value.trim();
+    const newTitle = (document.getElementById('edit-manga-title') as HTMLInputElement).value.trim();
+    const newAuthor = (document.getElementById('edit-manga-author') as HTMLInputElement).value.trim();
+    const newCoverInput = (document.getElementById('edit-manga-cover-url') as HTMLInputElement).value.trim();
+    const newDesc = (document.getElementById('edit-manga-description') as HTMLTextAreaElement).value.trim();
+    const genresInput = (document.getElementById('edit-manga-genres') as HTMLInputElement).value.trim();
+    const adminPassword = (document.getElementById('edit-manga-admin-password') as HTMLInputElement).value.trim();
 
     if (!newTitle || !newCoverInput || !adminPassword) {
       alert('Vui lòng điền đầy đủ Tên truyện, Link ảnh bìa và Mật khẩu Admin!');
@@ -150,10 +162,12 @@ window.EditMangaModalComponent = class EditMangaModalComponent {
     }
 
     this.isSubmitting = true;
-    const submitBtn = e.target.querySelector('button[type="submit"]');
-    const originalBtnHtml = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu...';
-    submitBtn.disabled = true;
+    const target = e.target as HTMLElement;
+    const submitBtn = target.querySelector('button[type="submit"]') as HTMLButtonElement | null;
+    if (submitBtn) {
+      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu...';
+      submitBtn.disabled = true;
+    }
 
     try {
       // Update targetManga fields
@@ -162,7 +176,7 @@ window.EditMangaModalComponent = class EditMangaModalComponent {
       this.targetManga.description = newDesc;
       this.targetManga.genres = genresInput ? genresInput.split(',').map(g => g.trim()).filter(Boolean) : ['Google Drive'];
 
-      const fileId = window.DriveHelper ? window.DriveHelper.extractFileId(newCoverInput) : null;
+      const fileId = DriveHelper.extractFileId(newCoverInput);
       if (fileId) {
         this.targetManga.coverDriveId = fileId;
         this.targetManga.coverUrl = newCoverInput;
@@ -178,12 +192,17 @@ window.EditMangaModalComponent = class EditMangaModalComponent {
         this.onMangaUpdated(this.targetManga);
       }
     } catch (err) {
-      console.error(err);
-      alert('⚠️ Có lỗi xảy ra khi cập nhật ảnh bìa: ' + err.message);
+      console.error('Lỗi cập nhật truyện:', err);
     } finally {
       this.isSubmitting = false;
-      submitBtn.innerHTML = originalBtnHtml;
-      submitBtn.disabled = false;
+      if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fas fa-save"></i> Lưu Ảnh Bìa & Thông Tin';
+        submitBtn.disabled = false;
+      }
     }
   }
-};
+}
+
+if (typeof window !== 'undefined') {
+  window.EditMangaModalComponent = EditMangaModalComponent;
+}
