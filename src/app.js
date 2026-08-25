@@ -17,8 +17,19 @@ class MangaApp {
   }
 
   getAllManga() {
-    // Chỉ trả về dữ liệu lấy trực tiếp từ Google Sheet
-    return this.sheetMangaList;
+    // 1. Ưu tiên dữ liệu tải từ Google Sheet trong phiên hiện tại
+    if (this.sheetMangaList && this.sheetMangaList.length > 0) {
+      return this.sheetMangaList;
+    }
+    // 2. Dự phòng bộ nhớ đệm Cache LocalStorage
+    try {
+      const cached = JSON.parse(localStorage.getItem('sheet_manga_cache') || '[]');
+      if (cached && cached.length > 0) {
+        return cached;
+      }
+    } catch (e) {}
+    // 3. Dự phòng danh mục tĩnh sampleManga khi mất mạng hoặc API Google Sheet nghẽn
+    return window.SAMPLE_MANGA_DATA || [];
   }
 
   isBookmarked(mangaId) {
@@ -92,7 +103,7 @@ class MangaApp {
       await window.SheetDatabase.saveMangaToSheet(mangaObj, adminPassword);
       alert('✅ Đã đăng truyện thành công lên Google Sheet!');
       setTimeout(() => {
-        this.syncGoogleSheetData();
+        this.syncGoogleSheetData(true);
       }, 1200);
     } else {
       alert('⚠️ Chưa kết nối Google Sheet Database!');
@@ -104,7 +115,7 @@ class MangaApp {
       await window.SheetDatabase.saveMangaToSheet(mangaObj, adminPassword);
       alert('✅ Đã lưu thay đổi thành công lên Google Sheet!');
       setTimeout(() => {
-        this.syncGoogleSheetData();
+        this.syncGoogleSheetData(true);
       }, 1000);
     } else {
       alert('⚠️ Chưa kết nối Google Sheet Database!');
@@ -217,13 +228,26 @@ class MangaApp {
     this.syncGoogleSheetData();
   }
 
-  async syncGoogleSheetData() {
+  async syncGoogleSheetData(force = false) {
+    const lastSyncTime = parseInt(localStorage.getItem('sheet_manga_sync_time') || '0', 10);
+    const now = Date.now();
+    const CACHE_TTL = 5 * 60 * 1000; // 5 phút cooldown tránh nghẽn Google Apps Script khi có nhiều người truy cập
+
+    // Nếu không bắt buộc và cache còn mới (< 5 phút) và đã có data -> Dùng luôn cache
+    if (!force && (now - lastSyncTime < CACHE_TTL) && this.sheetMangaList && this.sheetMangaList.length > 0) {
+      if (this.router) {
+        this.router.handleRoute();
+      }
+      return;
+    }
+
     if (window.SheetDatabase && window.SheetDatabase.apiUrl) {
       const liveData = await window.SheetDatabase.fetchMangaCatalog();
       if (liveData && liveData.length > 0) {
         this.sheetMangaList = liveData;
         try {
           localStorage.setItem('sheet_manga_cache', JSON.stringify(liveData));
+          localStorage.setItem('sheet_manga_sync_time', String(now));
         } catch (e) {
           console.warn('Cannot write catalog to localStorage cache:', e);
         }

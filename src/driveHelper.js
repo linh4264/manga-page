@@ -102,17 +102,23 @@ window.DriveHelper = {
 
   /**
    * Get direct displayable image URLs for a Google Drive File ID.
-   * Returns primary CDN link and alternative fallback links (including WebP-friendly thumbnail endpoint).
+   * Returns primary Edge CDN proxy, Google UserContent CDN link, and alternative fallback links.
    * @param {string} fileId 
    * @param {number} [width] Optional width target for thumbnail optimization (e.g. 500 for covers)
-   * @returns {{ primary: string, fallback1: string, fallback2: string, fallback3: string }}
+   * @returns {{ edgeProxy: string|null, primary: string, fallback1: string, fallback2: string, fallback3: string }}
    */
   getImageUrls(fileId, width = null) {
-    if (!fileId) return { primary: '', fallback1: '', fallback2: '', fallback3: '' };
+    if (!fileId) return { edgeProxy: null, primary: '', fallback1: '', fallback2: '', fallback3: '' };
     const cleanId = this.extractFileId(fileId) || fileId;
     const sizeParam = width ? `=w${width}` : '';
     const szParam = width ? `&sz=w${width}` : '&sz=w1000';
+
+    // Edge CDN Proxy Endpoint (Tự động kích hoạt khi chạy trên Live Domain Cloudflare)
+    const isLiveDomain = typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+    const proxyEndpoint = `/api/image-proxy?id=${encodeURIComponent(cleanId)}${width ? '&w=' + width : '&w=1000'}`;
+
     return {
+      edgeProxy: isLiveDomain ? proxyEndpoint : null,
       primary: `https://lh3.googleusercontent.com/d/${cleanId}${sizeParam}`,
       fallback1: `https://drive.google.com/thumbnail?id=${cleanId}${szParam}`,
       fallback2: `https://drive.google.com/uc?export=view&id=${cleanId}`,
@@ -121,28 +127,33 @@ window.DriveHelper = {
   },
 
   /**
-   * Attach error-recovery listener to an image element to try fallbacks if loading fails.
+   * Attach error-recovery listener to an image element to try multi-tier CDN fallbacks if loading fails.
    * @param {HTMLImageElement} imgElement 
    * @param {string} fileId 
    * @param {number} [targetWidth] Optional target width for image optimization
    */
   attachImageFallback(imgElement, fileId, targetWidth = null) {
     const urls = this.getImageUrls(fileId, targetWidth);
-    let attempt = 0;
     imgElement.decoding = 'async';
-    imgElement.src = urls.primary;
+
+    // Danh sách nguồn tải theo thứ tự ưu tiên: Edge Proxy -> Google UserContent CDN -> Google Thumbnail -> Direct Views
+    const candidateSources = [
+      urls.edgeProxy,
+      urls.primary,
+      urls.fallback1,
+      urls.fallback2,
+      urls.fallback3
+    ].filter(Boolean);
+
+    let currentIndex = 0;
+    imgElement.src = candidateSources[0];
 
     imgElement.onerror = () => {
-      attempt++;
-      if (attempt === 1) {
-        imgElement.src = urls.fallback1;
-      } else if (attempt === 2) {
-        imgElement.src = urls.fallback2;
-      } else if (attempt === 3) {
-        imgElement.src = urls.fallback3;
-      } else if (attempt === 4) {
+      currentIndex++;
+      if (currentIndex < candidateSources.length) {
+        imgElement.src = candidateSources[currentIndex];
+      } else {
         imgElement.onerror = null;
-        // Display placeholder or broken image indicator
         imgElement.classList.add('img-load-error');
         imgElement.alt = 'Không thể tải ảnh từ Google Drive. Vui lòng kiểm tra quyền chia sẻ ("Bất kỳ ai có liên kết").';
       }
