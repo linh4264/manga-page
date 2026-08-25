@@ -702,6 +702,13 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* Reader Split-View Layout (Matching User Screenshot) */
+body.is-webtoon-reading .app-header,
+body.is-webtoon-reading .view-container,
+body.is-webtoon-reading #library-view,
+body.is-webtoon-reading #detail-view {
+  display: none !important;
+}
+
 .reader-wrapper {
   position: fixed;
   top: 0;
@@ -1699,9 +1706,11 @@ input:focus, select:focus, textarea:focus {
     position: static !important;
   }
 
-  /* Giấu Header và App Library ngầm khi đang đọc truyện để bảo đảm chiều cao cuộn 100% chính xác */
+  /* Giấu Header và App Library/Detail ngầm khi đang đọc truyện để bảo đảm chiều cao cuộn 100% chính xác */
   body.is-webtoon-reading .app-header,
-  body.is-webtoon-reading #app {
+  body.is-webtoon-reading .view-container,
+  body.is-webtoon-reading #library-view,
+  body.is-webtoon-reading #detail-view {
     display: none !important;
   }
 

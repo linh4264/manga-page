@@ -145,6 +145,14 @@ window.LibraryComponent = class LibraryComponent {
       window.FirebaseService.recordView(manga.id);
     }
 
+    document.getElementById('reader-wrapper')?.classList.add('hidden');
+    document.querySelector('.view-container')?.classList.remove('hidden');
+    document.querySelector('.app-header')?.classList.remove('hidden');
+    document.body.classList.remove('is-webtoon-reading');
+    document.documentElement.classList.remove('is-webtoon-reading');
+    document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
+
     this.libraryContainer.classList.add('hidden');
     this.detailContainer.classList.remove('hidden');
     

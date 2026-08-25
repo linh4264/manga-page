@@ -57,6 +57,13 @@ window.AppRouter = class AppRouter {
   }
 
   /**
+   * Alias to goHome
+   */
+  goLibrary() {
+    this.goHome();
+  }
+
+  /**
    * Navigate to Manga DetailView (/:mangaId)
    */
   goManga(mangaId) {
@@ -90,6 +97,8 @@ window.AppRouter = class AppRouter {
       document.getElementById('reader-wrapper')?.classList.add('hidden');
       document.getElementById('detail-view')?.classList.add('hidden');
       document.getElementById('library-view')?.classList.remove('hidden');
+      document.querySelector('.view-container')?.classList.remove('hidden');
+      document.querySelector('.app-header')?.classList.remove('hidden');
       if (this.app.libraryComponent) {
         this.app.libraryComponent.renderCatalog();
       }
@@ -106,8 +115,11 @@ window.AppRouter = class AppRouter {
       document.documentElement.classList.remove('is-webtoon-reading');
       document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
+      document.getElementById('reader-wrapper')?.classList.add('hidden');
       document.getElementById('detail-view')?.classList.add('hidden');
       document.getElementById('library-view')?.classList.remove('hidden');
+      document.querySelector('.view-container')?.classList.remove('hidden');
+      document.querySelector('.app-header')?.classList.remove('hidden');
       return;
     }
 
@@ -120,12 +132,18 @@ window.AppRouter = class AppRouter {
       document.getElementById('reader-wrapper')?.classList.add('hidden');
       document.getElementById('library-view')?.classList.add('hidden');
       document.getElementById('detail-view')?.classList.remove('hidden');
+      document.querySelector('.view-container')?.classList.remove('hidden');
+      document.querySelector('.app-header')?.classList.remove('hidden');
       if (this.app.libraryComponent) {
         this.app.libraryComponent.showDetailView(targetManga, false); // false = don't push state again
       }
     } else if (parts.length >= 2) {
       // Route /:id/:chapterId -> Show Reader View
       const chapterId = parts[1];
+      document.getElementById('library-view')?.classList.add('hidden');
+      document.getElementById('detail-view')?.classList.add('hidden');
+      document.querySelector('.view-container')?.classList.add('hidden');
+      document.querySelector('.app-header')?.classList.add('hidden');
       if (this.app.readerComponent) {
         this.app.readerComponent.open(targetManga, chapterId, false); // false = don't push state again
       }

@@ -183,6 +183,12 @@ window.ReaderComponent = class ReaderComponent {
     if (this.readerMangaTitleTop) this.readerMangaTitleTop.textContent = manga.title;
     if (this.sidebarMangaTitle) this.sidebarMangaTitle.textContent = manga.title;
     
+    // Giấu hoàn toàn phần Header & Chi tiết truyện (view-container, detail-view, library-view)
+    document.getElementById('library-view')?.classList.add('hidden');
+    document.getElementById('detail-view')?.classList.add('hidden');
+    document.querySelector('.view-container')?.classList.add('hidden');
+    document.querySelector('.app-header')?.classList.add('hidden');
+
     // Populate chapter select dropdown
     this.readerChapterSelect.innerHTML = '';
     manga.chapters.forEach(ch => {
@@ -195,6 +201,10 @@ window.ReaderComponent = class ReaderComponent {
     this.loadChapter(chapterId);
     this.readerWrapper.classList.remove('hidden');
     this.applyReadingModeBodyStyles();
+
+    // Reset cuộn về đầu trang đọc
+    window.scrollTo(0, 0);
+    if (this.readerMainArea) this.readerMainArea.scrollTop = 0;
 
     // Ghi nhận lượt xem thật khi độc giả mở đọc chương
     if (window.FirebaseService && manga) {
@@ -1159,8 +1169,24 @@ window.ReaderComponent = class ReaderComponent {
     document.documentElement.classList.remove('is-webtoon-reading');
     document.body.style.overflow = '';
     document.documentElement.style.overflow = '';
+    
+    // Khôi phục hiển thị cho view-container và header
+    document.querySelector('.view-container')?.classList.remove('hidden');
+    document.querySelector('.app-header')?.classList.remove('hidden');
+
     if (this.state?.router) {
-      this.state.router.goLibrary();
+      if (this.currentManga) {
+        this.state.router.goManga(this.currentManga.id);
+      } else {
+        this.state.router.goHome();
+      }
+    } else {
+      if (this.currentManga && this.state?.libraryComponent) {
+        this.state.libraryComponent.showDetailView(this.currentManga);
+      } else {
+        document.getElementById('detail-view')?.classList.add('hidden');
+        document.getElementById('library-view')?.classList.remove('hidden');
+      }
     }
   }
 
