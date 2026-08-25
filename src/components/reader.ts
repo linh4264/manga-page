@@ -496,24 +496,16 @@ export class ReaderComponent {
       if (fileId) {
         DriveHelper.attachImageFallback(img, fileId);
       } else {
-        let safeUrl = '';
-        if (typeof pageItem === 'string' && pageItem.startsWith('data:image/')) {
-          safeUrl = pageItem;
-        } else {
-          try {
-            const parsed = new URL(pageItem);
-            if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
-              safeUrl = parsed.href;
-            }
-          } catch {}
-        }
-        if (safeUrl) {
-          img.src = safeUrl;
-          img.onerror = () => {
-            img.classList.add('img-load-error');
-            img.alt = 'Không thể tải ảnh.';
-          };
-        }
+        try {
+          const parsed = new URL(pageItem);
+          if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+            img.src = parsed.href;
+            img.onerror = () => {
+              img.classList.add('img-load-error');
+              img.alt = 'Không thể tải ảnh.';
+            };
+          }
+        } catch {}
       }
 
       pageDiv.appendChild(img);
@@ -598,20 +590,12 @@ export class ReaderComponent {
       if (fileId) {
         DriveHelper.attachImageFallback(img, fileId);
       } else {
-        let safeUrl = '';
-        if (typeof pageItem === 'string' && pageItem.startsWith('data:image/')) {
-          safeUrl = pageItem;
-        } else {
-          try {
-            const parsed = new URL(pageItem);
-            if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
-              safeUrl = parsed.href;
-            }
-          } catch {}
-        }
-        if (safeUrl) {
-          img.src = safeUrl;
-        }
+        try {
+          const parsed = new URL(pageItem);
+          if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+            img.src = parsed.href;
+          }
+        } catch {}
       }
       imageCache.set(idx, img);
       return img;

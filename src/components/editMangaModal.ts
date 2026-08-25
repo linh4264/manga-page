@@ -109,31 +109,21 @@ export class EditMangaModalComponent {
       if (fileId) {
         DriveHelper.attachImageFallback(previewImg, fileId, 500);
       } else {
-        let safeUrl = '';
-        if (val.startsWith('data:image/')) {
-          safeUrl = val;
-        } else {
-          try {
-            const parsed = new URL(val);
-            if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
-              safeUrl = parsed.href;
-            }
-          } catch {
-            safeUrl = '';
+        try {
+          const parsed = new URL(val);
+          if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+            previewImg.src = parsed.href;
+            previewImg.onerror = () => {
+              previewImg.classList.add('img-load-error');
+              previewImg.alt = 'Không thể tải ảnh từ URL.';
+            };
+            return;
           }
-        }
+        } catch {}
 
-        if (safeUrl) {
-          previewImg.src = safeUrl;
-          previewImg.onerror = () => {
-            previewImg.classList.add('img-load-error');
-            previewImg.alt = 'Không thể tải ảnh từ URL.';
-          };
-        } else {
-          previewImg.removeAttribute('src');
-          previewImg.classList.add('img-load-error');
-          previewImg.alt = 'URL ảnh không hợp lệ hoặc không an toàn.';
-        }
+        previewImg.removeAttribute('src');
+        previewImg.classList.add('img-load-error');
+        previewImg.alt = 'URL ảnh không hợp lệ hoặc không an toàn.';
       }
     }
   }
