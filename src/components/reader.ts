@@ -496,11 +496,24 @@ export class ReaderComponent {
       if (fileId) {
         DriveHelper.attachImageFallback(img, fileId);
       } else {
-        img.src = pageItem;
-        img.onerror = () => {
-          img.classList.add('img-load-error');
-          img.alt = 'Không thể tải ảnh.';
-        };
+        let safeUrl = '';
+        if (typeof pageItem === 'string' && pageItem.startsWith('data:image/')) {
+          safeUrl = pageItem;
+        } else {
+          try {
+            const parsed = new URL(pageItem);
+            if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+              safeUrl = parsed.href;
+            }
+          } catch {}
+        }
+        if (safeUrl) {
+          img.src = safeUrl;
+          img.onerror = () => {
+            img.classList.add('img-load-error');
+            img.alt = 'Không thể tải ảnh.';
+          };
+        }
       }
 
       pageDiv.appendChild(img);
@@ -564,6 +577,16 @@ export class ReaderComponent {
 
     const imageCache = new Map<number, HTMLImageElement>();
 
+    let isDrawPending = false;
+    const requestDraw = () => {
+      if (isDrawPending) return;
+      isDrawPending = true;
+      requestAnimationFrame(() => {
+        isDrawPending = false;
+        draw();
+      });
+    };
+
     const loadImage = (idx: number): HTMLImageElement | null => {
       if (idx < 0 || idx >= pages.length) return null;
       if (imageCache.has(idx)) return imageCache.get(idx)!;
@@ -571,14 +594,24 @@ export class ReaderComponent {
       const fileId = DriveHelper.extractFileId(pageItem);
       const img = new Image();
       img.referrerPolicy = 'no-referrer';
-      img.addEventListener('load', () => draw());
+      img.addEventListener('load', () => requestDraw());
       if (fileId) {
         DriveHelper.attachImageFallback(img, fileId);
-      } else if (DriveHelper.isValidImageUrl(pageItem)) {
-        img.src = pageItem;
-      }
-      if (img.complete && img.naturalWidth > 0) {
-        draw();
+      } else {
+        let safeUrl = '';
+        if (typeof pageItem === 'string' && pageItem.startsWith('data:image/')) {
+          safeUrl = pageItem;
+        } else {
+          try {
+            const parsed = new URL(pageItem);
+            if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+              safeUrl = parsed.href;
+            }
+          } catch {}
+        }
+        if (safeUrl) {
+          img.src = safeUrl;
+        }
       }
       imageCache.set(idx, img);
       return img;
@@ -751,7 +784,7 @@ export class ReaderComponent {
       canvas.height = Math.round(renderH * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      draw();
+      requestDraw();
     };
 
     window.addEventListener('resize', resizeCanvas);
@@ -835,7 +868,7 @@ export class ReaderComponent {
         if (e.cancelable) e.preventDefault();
         state.finger = { ...pt };
         state.progress = Math.min(1, Math.max(0.01, Math.abs(state.finger.x - state.corner.x) / (w * 0.95)));
-        draw();
+        requestDraw();
       }
     };
 
@@ -849,7 +882,7 @@ export class ReaderComponent {
       if (!state.isDragging) {
         state.progress = 0;
         state.targetPage = -1;
-        draw();
+        requestDraw();
         return;
       }
 
@@ -870,14 +903,14 @@ export class ReaderComponent {
           state.progress = 0;
           state.targetPage = -1;
           preload(state.currentPage);
-          draw();
+          requestDraw();
           this.updateProgressUI();
         });
       } else {
         animateTo(state.corner.x, state.corner.y, () => {
           state.progress = 0;
           state.targetPage = -1;
-          draw();
+          requestDraw();
         });
       }
     };
@@ -912,7 +945,7 @@ export class ReaderComponent {
           state.progress = 0;
           state.targetPage = -1;
           preload(state.currentPage);
-          draw();
+          requestDraw();
           this.updateProgressUI();
         });
       },
@@ -923,18 +956,22 @@ export class ReaderComponent {
           state.progress = 0;
           state.targetPage = -1;
           preload(pageIdx);
-          draw();
+          requestDraw();
           this.updateProgressUI();
         }
       },
       destroy: () => {
         window.removeEventListener('resize', resizeCanvas);
+        canvas.removeEventListener('touchstart', onPointerDown);
         window.removeEventListener('touchmove', onPointerMove);
         window.removeEventListener('touchend', onPointerUp);
         window.removeEventListener('touchcancel', onPointerUp);
+        canvas.removeEventListener('mousedown', onPointerDown);
         window.removeEventListener('mousemove', onPointerMove);
         window.removeEventListener('mouseup', onPointerUp);
         if (state.animFrame) cancelAnimationFrame(state.animFrame);
+        isDrawPending = false;
+        imageCache.clear();
       }
     };
   }
@@ -992,10 +1029,19 @@ export class ReaderComponent {
       const nextPages = nextChap.pages || [];
       nextPages.slice(0, 3).forEach(pageItem => {
         const fileId = DriveHelper.extractFileId(pageItem);
-        const url = fileId ? DriveHelper.getImageUrls(fileId).primary : pageItem;
-        if (url) {
+        if (fileId) {
           const img = new Image();
-          img.src = url;
+          img.referrerPolicy = 'no-referrer';
+          DriveHelper.attachImageFallback(img, fileId);
+        } else {
+          try {
+            const parsed = new URL(pageItem);
+            if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+              const img = new Image();
+              img.referrerPolicy = 'no-referrer';
+              img.src = parsed.href;
+            }
+          } catch {}
         }
       });
     }
@@ -1159,6 +1205,8 @@ export class ReaderComponent {
   }
 
   setReadingMode(mode: 'webtoon' | 'horizontal-rtl' | 'horizontal-ltr'): void {
+    if (this.readingMode === mode) return;
+    this.stopAutoScroll();
     this.readingMode = mode;
     localStorage.setItem('drive_manga_reading_mode', mode);
     this.applyReadingModeBodyStyles();
