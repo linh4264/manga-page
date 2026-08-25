@@ -9,6 +9,9 @@ import { Manga } from './types/manga';
 const _OBFUSCATED_SHEET_KEY = [104,116,116,112,115,58,47,47,115,99,114,105,112,116,46,103,111,111,103,108,101,46,99,111,109,47,109,97,99,114,111,115,47,115,47,65,75,102,121,99,98,119,72,108,65,108,97,71,90,106,105,97,81,89,89,101,86,114,57,67,52,87,85,49,67,113,71,112,98,119,51,114,45,98,85,77,109,111,98,75,106,73,103,89,50,101,81,90,105,97,69,108,100,52,106,71,109,57,71,120,45,56,101,72,49,56,98,117,103,47,101,120,101,99];
 
 function _getHardcodedSheetUrl(): string {
+  if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GOOGLE_SHEET_API_URL) {
+    return import.meta.env.VITE_GOOGLE_SHEET_API_URL;
+  }
   return _OBFUSCATED_SHEET_KEY.map(c => String.fromCharCode(c)).join('');
 }
 
@@ -20,7 +23,7 @@ if (typeof localStorage !== 'undefined') {
 }
 
 export const SheetDatabase = {
-  // Tự động sử dụng URL gán cứng ẩn bảo mật làm mặc định
+  // Tự động sử dụng URL từ env hoặc gán cứng ẩn bảo mật làm mặc định
   apiUrl: _DEFAULT_SHEET_URL,
 
   /**

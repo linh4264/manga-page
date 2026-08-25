@@ -4,14 +4,14 @@
  */
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAQPv0p09EmCdPisFdluwEpsIZh4d653A4",
-  authDomain: "drivemanga4264.firebaseapp.com",
-  databaseURL: "https://drivemanga4264-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "drivemanga4264",
-  storageBucket: "drivemanga4264.firebasestorage.app",
-  messagingSenderId: "485073426909",
-  appId: "1:485073426909:web:460a2b4b659c796d6c3e34",
-  measurementId: "G-TTNTCZ25T7"
+  apiKey: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_API_KEY) || "AIzaSyAQPv0p09EmCdPisFdluwEpsIZh4d653A4",
+  authDomain: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_AUTH_DOMAIN) || "drivemanga4264.firebaseapp.com",
+  databaseURL: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_DATABASE_URL) || "https://drivemanga4264-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_PROJECT_ID) || "drivemanga4264",
+  storageBucket: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_STORAGE_BUCKET) || "drivemanga4264.firebasestorage.app",
+  messagingSenderId: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_MESSAGING_SENDER_ID) || "485073426909",
+  appId: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_APP_ID) || "1:485073426909:web:460a2b4b659c796d6c3e34",
+  measurementId: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_MEASUREMENT_ID) || "G-TTNTCZ25T7"
 };
 
 export class FirebaseViewService {
