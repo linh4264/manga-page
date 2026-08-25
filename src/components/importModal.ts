@@ -215,7 +215,9 @@ export class ImportModalComponent {
     } else {
       this.scannedPages = [];
       if (statusEl) {
-        statusEl.innerHTML = `<span style="color: #ef4444;"><i class="fas fa-exclamation-triangle"></i> ${res.error || 'Không thể quét ảnh trong thư mục. Vui lòng đảm bảo thư mục đã bật quyền "Bất kỳ ai có đường liên kết".'}</span>`;
+        const errorMsg = document.createTextNode(String(res?.error || 'Không thể quét ảnh trong thư mục. Vui lòng đảm bảo thư mục đã bật quyền "Bất kỳ ai có đường liên kết".'));
+        statusEl.innerHTML = '<span style="color: #ef4444;"><i class="fas fa-exclamation-triangle"></i> </span>';
+        statusEl.firstElementChild?.appendChild(errorMsg);
       }
     }
   }

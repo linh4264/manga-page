@@ -135,7 +135,7 @@ export class LibraryComponent {
 
     card.innerHTML = `
       <div class="card-cover">
-        <img src="${coverSrc || 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=600&auto=format&fit=crop&q=80'}" alt="${manga.title}" loading="lazy">
+        <img src="${coverSrc || 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=600&auto=format&fit=crop&q=80'}" alt="${manga.title}" loading="lazy" referrerpolicy="no-referrer">
         <div class="card-badge-top">
           <span class="badge">${manga.status || 'Đang tiến hành'}</span>
         </div>
@@ -151,6 +151,12 @@ export class LibraryComponent {
         </div>
       </div>
     `;
+
+    const imgEl = card.querySelector('.card-cover img') as HTMLImageElement | null;
+    const coverFileId = manga.coverDriveId || DriveHelper.extractFileId(manga.coverUrl) || (manga.chapters?.[0]?.pages?.[0] ? DriveHelper.extractFileId(manga.chapters[0].pages[0]) : null);
+    if (imgEl && coverFileId) {
+      DriveHelper.attachImageFallback(imgEl, coverFileId, 500);
+    }
 
     card.addEventListener('click', () => {
       this.showDetailView(manga);

@@ -186,14 +186,18 @@ export class AddChapterModalComponent {
           if (statusDiv) {
             statusDiv.style.background = 'rgba(239, 68, 68, 0.15)';
             statusDiv.style.color = '#f87171';
-            statusDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Lỗi: ${result?.error || 'Không tìm thấy ảnh trong thư mục!'}`;
+            const errorMsg = document.createTextNode(String(result?.error || 'Không tìm thấy ảnh trong thư mục!'));
+            statusDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Lỗi: ';
+            statusDiv.appendChild(errorMsg);
           }
         }
       } catch (err: any) {
         if (statusDiv) {
           statusDiv.style.background = 'rgba(239, 68, 68, 0.15)';
           statusDiv.style.color = '#f87171';
-          statusDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Lỗi kết nối: ${err.message || err}`;
+          const errorMsg = document.createTextNode(String(err?.message || err));
+          statusDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Lỗi kết nối: ';
+          statusDiv.appendChild(errorMsg);
         }
       } finally {
         if (btnScan) {
