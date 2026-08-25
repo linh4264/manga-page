@@ -110,17 +110,13 @@ export class EditMangaModalComponent {
         DriveHelper.attachImageFallback(previewImg, fileId, 500);
       } else {
         let safeUrl = '';
-        if (val.startsWith('data:image/')) {
-          safeUrl = val;
-        } else {
-          try {
-            const parsed = new URL(val);
-            if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
-              safeUrl = parsed.href;
-            }
-          } catch {
-            safeUrl = '';
+        try {
+          const parsed = new URL(val);
+          if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+            safeUrl = parsed.href;
           }
+        } catch {
+          safeUrl = '';
         }
 
         if (safeUrl) {
