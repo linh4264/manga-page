@@ -43,7 +43,13 @@ window.SheetDatabase = {
     }
 
     try {
-      const response = await fetch(this.apiUrl, { method: 'GET' });
+      const separator = this.apiUrl.includes('?') ? '&' : '?';
+      const cacheBustUrl = `${this.apiUrl}${separator}_t=${Date.now()}`;
+
+      const response = await fetch(cacheBustUrl, { 
+        method: 'GET',
+        cache: 'no-store'
+      });
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       
       const contentType = response.headers.get('content-type') || '';
@@ -54,6 +60,7 @@ window.SheetDatabase = {
         return this.parseCSV(csvText);
       }
 
+      const data = await response.json();
       let result = null;
       if (Array.isArray(data)) {
         result = data;

@@ -195,6 +195,10 @@ class MangaApp {
       }
     });
 
+    document.getElementById('btn-sync-live-data')?.addEventListener('click', () => {
+      this.syncGoogleSheetData(true);
+    });
+
     document.getElementById('btn-open-import')?.addEventListener('click', () => {
       this.importModalComponent.open();
     });
@@ -208,7 +212,7 @@ class MangaApp {
       if (inputUrl !== null) {
         window.SheetDatabase.setApiUrl(inputUrl);
         alert('Đã lưu URL Google Apps Script! Trang web sẽ tự động đồng bộ dữ liệu với Google Sheet.');
-        this.syncGoogleSheetData();
+        this.syncGoogleSheetData(true);
       }
     });
 
@@ -224,41 +228,46 @@ class MangaApp {
     // Initial render
     this.libraryComponent.renderCatalog();
 
-    // Sync live Google Sheet data & handle initial URL Route
-    this.syncGoogleSheetData();
+    // Sync live Google Sheet data in background on every page load (Stale-While-Revalidate)
+    this.syncGoogleSheetData(false);
   }
 
   async syncGoogleSheetData(force = false) {
-    const lastSyncTime = parseInt(localStorage.getItem('sheet_manga_sync_time') || '0', 10);
-    const now = Date.now();
-    const CACHE_TTL = 5 * 60 * 1000; // 5 phút cooldown tránh nghẽn Google Apps Script khi có nhiều người truy cập
+    const syncIcon = document.getElementById('icon-sync-data');
+    if (syncIcon) syncIcon.classList.add('fa-spin');
 
-    // Nếu không bắt buộc và cache còn mới (< 5 phút) và đã có data -> Dùng luôn cache
-    if (!force && (now - lastSyncTime < CACHE_TTL) && this.sheetMangaList && this.sheetMangaList.length > 0) {
-      if (this.router) {
-        this.router.handleRoute();
-      }
-      return;
-    }
+    const now = Date.now();
 
     if (window.SheetDatabase && window.SheetDatabase.apiUrl) {
-      const liveData = await window.SheetDatabase.fetchMangaCatalog();
-      if (liveData && liveData.length > 0) {
-        this.sheetMangaList = liveData;
-        try {
-          localStorage.setItem('sheet_manga_cache', JSON.stringify(liveData));
-          localStorage.setItem('sheet_manga_sync_time', String(now));
-        } catch (e) {
-          console.warn('Cannot write catalog to localStorage cache:', e);
+      try {
+        const liveData = await window.SheetDatabase.fetchMangaCatalog();
+        if (liveData && liveData.length > 0) {
+          this.sheetMangaList = liveData;
+          try {
+            localStorage.setItem('sheet_manga_cache', JSON.stringify(liveData));
+            localStorage.setItem('sheet_manga_sync_time', String(now));
+          } catch (e) {
+            console.warn('Cannot write catalog to localStorage cache:', e);
+          }
+
+          // Cập nhật lại view hiện tại (Library, Detail hoặc Reader) với dữ liệu mới nhất
+          if (this.router) {
+            this.router.handleRoute();
+          } else if (this.libraryComponent) {
+            this.libraryComponent.renderCatalog();
+          }
         }
-        if (this.libraryComponent) {
-          this.libraryComponent.renderCatalog();
+      } catch (err) {
+        console.warn('Lỗi đồng bộ Google Sheet:', err);
+      } finally {
+        if (syncIcon) {
+          setTimeout(() => {
+            syncIcon.classList.remove('fa-spin');
+          }, 400);
         }
       }
-    }
-    // Handle URL routing after data sync
-    if (this.router) {
-      this.router.handleRoute();
+    } else {
+      if (syncIcon) syncIcon.classList.remove('fa-spin');
     }
   }
 }
