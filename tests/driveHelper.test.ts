@@ -61,4 +61,20 @@ describe('DriveHelper - Google Drive Parsing & CDN Link Generator', () => {
     expect(urls.fallback2).toBe(`https://drive.google.com/uc?export=view&id=${fileId}`);
     expect(urls.fallback3).toBe(`https://drive.google.com/uc?export=download&id=${fileId}`);
   });
+
+  it('validates safe image URLs correctly', () => {
+    expect(DriveHelper.isValidImageUrl('https://example.com/image.png')).toBe(true);
+    expect(DriveHelper.isValidImageUrl('http://example.com/image.jpg')).toBe(true);
+    expect(DriveHelper.isValidImageUrl('data:image/png;base64,iVBORw0KGgo=')).toBe(true);
+    expect(DriveHelper.isValidImageUrl('javascript:alert(1)')).toBe(false);
+    expect(DriveHelper.isValidImageUrl('blob:http://evil.com/123')).toBe(false);
+    expect(DriveHelper.isValidImageUrl('')).toBe(false);
+    expect(DriveHelper.isValidImageUrl(null)).toBe(false);
+  });
+
+  it('returns empty URLs for invalid fileId in getImageUrls', () => {
+    const urls = DriveHelper.getImageUrls('invalid!id$');
+    expect(urls.primary).toBe('');
+    expect(urls.fallback1).toBe('');
+  });
 });

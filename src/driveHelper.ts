@@ -95,25 +95,44 @@ export const DriveHelper = {
   },
 
   /**
+   * Check if a given string is a safe image URL (http, https, or data:image).
+   */
+  isValidImageUrl(url?: string | null): boolean {
+    if (!url || typeof url !== 'string') return false;
+    const trimmed = url.trim();
+    if (trimmed.startsWith('data:image/')) return true;
+    try {
+      const parsed = new URL(trimmed, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
+      return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  },
+
+  /**
    * Get direct displayable image URLs for a Google Drive File ID.
-   * Returns primary Edge CDN proxy, Google UserContent CDN link, and alternative fallback links.
+   * Returns primary Edge CDN proxy, Google Thumbnail link, Google UserContent CDN link, and alternative fallback links.
    */
   getImageUrls(fileId?: string | null, width: number | null = null): DriveImageUrls {
     if (!fileId) return { edgeProxy: null, primary: '', fallback1: '', fallback2: '', fallback3: '' };
-    const cleanId = this.extractFileId(fileId) || fileId;
-    const sizeParam = width ? `=w${width}` : '';
-    const szParam = width ? `&sz=w${width}` : '&sz=w1000';
+    const cleanId = this.extractFileId(fileId) || (/^[a-zA-Z0-9_-]{20,60}$/.test(fileId.trim()) ? fileId.trim() : null);
+    if (!cleanId) return { edgeProxy: null, primary: '', fallback1: '', fallback2: '', fallback3: '' };
+
+    const encodedId = encodeURIComponent(cleanId);
+    const validWidth = (width && width > 0 && width <= 4000) ? Math.floor(width) : null;
+    const sizeParam = validWidth ? `=w${validWidth}` : '=w1600';
+    const szParam = validWidth ? `&sz=w${validWidth}` : '&sz=w1600';
 
     // Edge CDN Proxy Endpoint (Tự động kích hoạt khi chạy trên Live Domain Cloudflare)
     const isLiveDomain = typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
-    const proxyEndpoint = `/api/image-proxy?id=${encodeURIComponent(cleanId)}${width ? '&w=' + width : '&w=1000'}`;
+    const proxyEndpoint = `/api/image-proxy?id=${encodedId}${validWidth ? '&w=' + validWidth : '&w=1600'}`;
 
     return {
       edgeProxy: isLiveDomain ? proxyEndpoint : null,
-      primary: `https://lh3.googleusercontent.com/d/${cleanId}${sizeParam}`,
-      fallback1: `https://drive.google.com/thumbnail?id=${cleanId}${szParam}`,
-      fallback2: `https://drive.google.com/uc?export=view&id=${cleanId}`,
-      fallback3: `https://drive.google.com/uc?export=download&id=${cleanId}`
+      primary: `https://lh3.googleusercontent.com/d/${encodedId}${sizeParam}`,
+      fallback1: `https://drive.google.com/thumbnail?id=${encodedId}${szParam}`,
+      fallback2: `https://drive.google.com/uc?export=view&id=${encodedId}`,
+      fallback3: `https://drive.google.com/uc?export=download&id=${encodedId}`
     };
   },
 
@@ -121,32 +140,92 @@ export const DriveHelper = {
    * Attach error-recovery listener to an image element to try multi-tier CDN fallbacks if loading fails.
    */
   attachImageFallback(imgElement: HTMLImageElement, fileId?: string | null, targetWidth: number | null = null): void {
-    if (!fileId) return;
+    if (!fileId || !imgElement) return;
     const urls = this.getImageUrls(fileId, targetWidth);
+    imgElement.referrerPolicy = 'no-referrer';
     imgElement.decoding = 'async';
 
-    // Danh sách nguồn tải theo thứ tự ưu tiên: Edge Proxy -> Google UserContent CDN -> Google Thumbnail -> Direct Views
+    const cleanId = this.extractFileId(fileId) || (/^[a-zA-Z0-9_-]{20,60}$/.test(fileId.trim()) ? fileId.trim() : null);
+    const encodedId = cleanId ? encodeURIComponent(cleanId) : '';
+    const validWidth = (targetWidth && targetWidth > 0 && targetWidth <= 4000) ? Math.floor(targetWidth) : null;
+
+    // Danh sách nguồn tải theo thứ tự ưu tiên tối ưu:
+    // 1. Edge CDN Proxy (nếu trên Live Cloudflare)
+    // 2. Google Drive Thumbnail CDN (rất nhanh, chịu tải tốt, ít bị rate limit)
+    // 3. Global Edge CDN Cache qua wsrv.nl (vượt qua hoàn toàn hạn ngạch IP / 403 Google)
+    // 4. Google UserContent CDN (lh3.googleusercontent.com)
+    // 5. Google User Content alternative host (lh3.google.com)
+    // 6. Google Drive direct views & downloads
     const candidateSources = [
       urls.edgeProxy,
-      urls.primary,
       urls.fallback1,
+      encodedId ? `https://wsrv.nl/?url=https%3A%2F%2Fdrive.google.com%2Fthumbnail%3Fid%3D${encodedId}%26sz%3Dw${validWidth || 1600}&output=webp` : null,
+      urls.primary,
+      encodedId ? `https://wsrv.nl/?url=https%3A%2F%2Flh3.googleusercontent.com%2Fd%2F${encodedId}%3Dw${validWidth || 1600}&output=webp` : null,
+      encodedId ? `https://lh3.google.com/u/0/d/${encodedId}` : null,
       urls.fallback2,
-      urls.fallback3
-    ].filter(Boolean) as string[];
+      urls.fallback3,
+      encodedId ? `https://docs.google.com/uc?export=download&id=${encodedId}` : null
+    ].filter((url): url is string => Boolean(url) && (url.startsWith('https://') || url.startsWith('/api/image-proxy')));
+
+    if (candidateSources.length === 0) {
+      imgElement.classList.add('img-load-error');
+      imgElement.alt = 'ID tệp Google Drive không hợp lệ.';
+      return;
+    }
 
     let currentIndex = 0;
-    imgElement.src = candidateSources[0];
+    let retryCycles = 0;
+    const maxRetryCycles = 2;
+    let timer: any = null;
 
-    imgElement.onerror = () => {
-      currentIndex++;
+    const onRetryClick = () => {
+      imgElement.classList.remove('img-load-error');
+      imgElement.style.cursor = '';
+      currentIndex = 0;
+      retryCycles = 0;
+      tryNext();
+    };
+
+    const handleLoad = () => {
+      if (timer) clearTimeout(timer);
+      imgElement.classList.remove('img-load-error');
+      imgElement.style.cursor = '';
+      imgElement.removeEventListener('click', onRetryClick);
+    };
+
+    const handleError = () => {
+      if (timer) clearTimeout(timer);
+      // Giãn cách 200ms trước khi chuyển nguồn tiếp theo để tránh bão request gây 429
+      timer = setTimeout(tryNext, 200);
+    };
+
+    imgElement.addEventListener('load', handleLoad);
+    imgElement.addEventListener('error', handleError);
+
+    const tryNext = () => {
       if (currentIndex < candidateSources.length) {
-        imgElement.src = candidateSources[currentIndex];
+        const nextUrl = candidateSources[currentIndex];
+        currentIndex++;
+        imgElement.src = nextUrl;
+      } else if (retryCycles < maxRetryCycles) {
+        retryCycles++;
+        currentIndex = 0;
+        // Đợi một khoảng ngắn (backoff) trước khi thử lại toàn bộ các nguồn
+        timer = setTimeout(() => {
+          tryNext();
+        }, 400 * retryCycles);
       } else {
-        imgElement.onerror = null;
+        imgElement.removeEventListener('error', handleError);
         imgElement.classList.add('img-load-error');
-        imgElement.alt = 'Không thể tải ảnh từ Google Drive. Vui lòng kiểm tra quyền chia sẻ ("Bất kỳ ai có liên kết").';
+        imgElement.alt = 'Không thể tải ảnh từ Google Drive. Nhấn vào đây để thử tải lại.';
+        imgElement.title = 'Nhấn vào đây để thử tải lại ảnh';
+        imgElement.style.cursor = 'pointer';
+        imgElement.addEventListener('click', onRetryClick, { once: true });
       }
     };
+
+    tryNext();
   }
 };
 

@@ -488,6 +488,7 @@ export class ReaderComponent {
 
       const img = document.createElement('img');
       img.alt = `Trang ${index + 1}`;
+      img.referrerPolicy = 'no-referrer';
       img.loading = index < 3 ? 'eager' : 'lazy';
       img.decoding = 'async';
 
@@ -569,11 +570,15 @@ export class ReaderComponent {
       const pageItem = pages[idx];
       const fileId = DriveHelper.extractFileId(pageItem);
       const img = new Image();
-      img.onload = () => draw();
+      img.referrerPolicy = 'no-referrer';
+      img.addEventListener('load', () => draw());
       if (fileId) {
         DriveHelper.attachImageFallback(img, fileId);
-      } else {
+      } else if (DriveHelper.isValidImageUrl(pageItem)) {
         img.src = pageItem;
+      }
+      if (img.complete && img.naturalWidth > 0) {
+        draw();
       }
       imageCache.set(idx, img);
       return img;
@@ -590,6 +595,11 @@ export class ReaderComponent {
       if (!img || !img.complete || img.naturalWidth === 0) {
         ctx.fillStyle = '#0b0f19';
         ctx.fillRect(x, y, w, h);
+        ctx.fillStyle = '#64748b';
+        ctx.font = '15px "Plus Jakarta Sans", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('Đang tải trang...', x + w / 2, y + h / 2);
         return;
       }
       ctx.fillStyle = '#05070c';

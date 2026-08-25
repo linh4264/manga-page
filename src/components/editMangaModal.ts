@@ -108,12 +108,16 @@ export class EditMangaModalComponent {
 
       if (fileId) {
         DriveHelper.attachImageFallback(previewImg, fileId, 500);
-      } else {
+      } else if (DriveHelper.isValidImageUrl(val)) {
         previewImg.src = val;
         previewImg.onerror = () => {
           previewImg.classList.add('img-load-error');
           previewImg.alt = 'Không thể tải ảnh từ URL.';
         };
+      } else {
+        previewImg.removeAttribute('src');
+        previewImg.classList.add('img-load-error');
+        previewImg.alt = 'URL ảnh không hợp lệ hoặc không an toàn.';
       }
     }
   }
