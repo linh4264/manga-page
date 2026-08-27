@@ -111,13 +111,17 @@ export class CanvasCurlEngine {
 
     if (fileId) {
       DriveHelper.attachImageFallback(img, fileId);
+    } else if (pageItem.startsWith('/') || pageItem.startsWith('data:') || pageItem.startsWith('blob:')) {
+      img.src = pageItem;
     } else {
       try {
-        const parsed = new URL(pageItem);
+        const parsed = new URL(pageItem, window.location.href);
         if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
           img.src = parsed.href;
         }
-      } catch {}
+      } catch {
+        img.src = pageItem;
+      }
     }
 
     this.imageCache.set(idx, img);

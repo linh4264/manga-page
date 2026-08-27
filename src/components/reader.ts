@@ -120,13 +120,17 @@ export class ReaderComponent {
       }
     });
     document.getElementById('btn-next-page')?.addEventListener('click', () => {
+      const maxPages = (this.currentChapter?.pages?.length || 0);
       if (this.readingMode.startsWith('horizontal')) {
         this.flipPage(1);
       } else {
-        this.scrollToPage(Math.min((this.currentChapter?.pages?.length || 1) - 1, this.currentPageIndex + 1));
+        this.scrollToPage(Math.min(maxPages, this.currentPageIndex + 1));
       }
     });
-    document.getElementById('btn-last-page')?.addEventListener('click', () => this.scrollToPage((this.currentChapter?.pages?.length || 1) - 1));
+    document.getElementById('btn-last-page')?.addEventListener('click', () => {
+      const maxPages = (this.currentChapter?.pages?.length || 0);
+      this.scrollToPage(maxPages);
+    });
 
     // Bind Reading Mode Selector Buttons
     document.querySelectorAll('#reader-mode-buttons .btn-mode-pill').forEach(btnEl => {
@@ -564,9 +568,15 @@ export class ReaderComponent {
       const fileId = DriveHelper.extractFileId(pageItem);
       if (fileId) {
         DriveHelper.attachImageFallback(img, fileId);
+      } else if (pageItem.startsWith('/') || pageItem.startsWith('data:') || pageItem.startsWith('blob:')) {
+        img.src = pageItem;
+        img.onerror = () => {
+          img.classList.add('img-load-error');
+          img.alt = 'Không thể tải ảnh.';
+        };
       } else {
         try {
-          const parsed = new URL(pageItem);
+          const parsed = new URL(pageItem, window.location.href);
           if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
             img.src = parsed.href;
             img.onerror = () => {
@@ -574,12 +584,98 @@ export class ReaderComponent {
               img.alt = 'Không thể tải ảnh.';
             };
           }
-        } catch {}
+        } catch {
+          img.src = pageItem;
+        }
       }
 
       pageDiv.appendChild(img);
       this.readerCanvas?.appendChild(pageDiv);
     });
+
+    // 1. Tự động thêm ảnh Credit.webp vào cuối chương
+    const creditDiv = document.createElement('div');
+    creditDiv.className = 'reader-page-item reader-credit-item';
+    creditDiv.dataset.pageIndex = String(pages.length);
+
+    const creditImg = document.createElement('img');
+    creditImg.alt = 'Credit - Manga Translator Studio';
+    creditImg.src = '/Credit.webp';
+    creditImg.className = 'reader-credit-img';
+    creditImg.referrerPolicy = 'no-referrer';
+    creditImg.loading = 'lazy';
+    creditImg.decoding = 'async';
+    creditImg.onerror = () => {
+      creditDiv.style.display = 'none';
+    };
+
+    creditDiv.appendChild(creditImg);
+    this.readerCanvas.appendChild(creditDiv);
+
+    // 2. Card Điều Hướng Kết Thúc Chương (Sleek End-of-Chapter Card)
+    const currentIdx = (this.currentManga?.chapters || []).findIndex(c => c.id === this.currentChapter?.id);
+    const hasPrev = currentIdx > 0;
+    const hasNext = currentIdx !== -1 && currentIdx < (this.currentManga?.chapters || []).length - 1;
+    const nextChapterObj = hasNext ? this.currentManga?.chapters[currentIdx + 1] : null;
+    const prevChapterObj = hasPrev ? this.currentManga?.chapters[currentIdx - 1] : null;
+    const isBookmarked = this.currentManga ? this.state.isBookmarked(this.currentManga.id) : false;
+
+    const endCard = document.createElement('div');
+    endCard.className = 'reader-chapter-end-card glass-panel';
+    endCard.innerHTML = `
+      <div class="end-card-header">
+        <div class="end-card-badge"><i class="fas fa-check-circle"></i> Đã hoàn thành chương</div>
+        <h3>${this.currentChapter.title}</h3>
+        <p class="end-card-manga-title">${this.currentManga?.title || ''}</p>
+      </div>
+
+      <div class="end-card-nav-actions">
+        ${hasPrev ? `
+          <button type="button" class="btn-secondary btn-end-nav" id="btn-end-prev-chap">
+            <i class="fas fa-arrow-left"></i> ${prevChapterObj?.title || 'Chương trước'}
+          </button>
+        ` : ''}
+
+        ${hasNext ? `
+          <button type="button" class="btn-primary btn-end-nav btn-end-next" id="btn-end-next-chap">
+            <span>${nextChapterObj?.title || 'Chương tiếp theo'}</span> <i class="fas fa-arrow-right"></i>
+          </button>
+        ` : `
+          <div class="end-card-latest-notice">
+            <i class="fas fa-flag-checkered" style="color: #fbbf24; margin-right: 6px;"></i> Bạn đã đọc đến chương mới nhất của bộ truyện này!
+          </div>
+        `}
+      </div>
+
+      <div class="end-card-sub-actions">
+        <button type="button" class="btn-secondary btn-end-sub" id="btn-end-bookmark">
+          <i class="${isBookmarked ? 'fas' : 'far'} fa-bookmark" style="${isBookmarked ? 'color: #818cf8;' : ''}"></i>
+          <span>${isBookmarked ? 'Đã yêu thích' : 'Yêu thích truyện'}</span>
+        </button>
+        <button type="button" class="btn-secondary btn-end-sub" id="btn-end-share-fb">
+          <i class="fab fa-facebook-f" style="color: #1877f2;"></i> <span>Chia sẻ FB</span>
+        </button>
+        <button type="button" class="btn-secondary btn-end-sub" id="btn-end-back-manga">
+          <i class="fas fa-list"></i> <span>Danh sách chương</span>
+        </button>
+      </div>
+    `;
+
+    this.readerCanvas.appendChild(endCard);
+
+    // Gắn sự kiện cho các nút trong endCard
+    endCard.querySelector('#btn-end-prev-chap')?.addEventListener('click', () => this.prevChapter());
+    endCard.querySelector('#btn-end-next-chap')?.addEventListener('click', () => this.nextChapter());
+    endCard.querySelector('#btn-end-bookmark')?.addEventListener('click', () => {
+      this.toggleBookmark();
+      const bBtn = endCard.querySelector('#btn-end-bookmark');
+      const bookmarkedNow = this.currentManga ? this.state.isBookmarked(this.currentManga.id) : false;
+      if (bBtn) {
+        bBtn.innerHTML = `<i class="${bookmarkedNow ? 'fas' : 'far'} fa-bookmark" style="${bookmarkedNow ? 'color: #818cf8;' : ''}"></i> <span>${bookmarkedNow ? 'Đã yêu thích' : 'Yêu thích truyện'}</span>`;
+      }
+    });
+    endCard.querySelector('#btn-end-share-fb')?.addEventListener('click', () => this.shareOnFacebook());
+    endCard.querySelector('#btn-end-back-manga')?.addEventListener('click', () => this.close());
 
     this.preloadNextChapter();
     this.updateProgressUI();
@@ -617,10 +713,13 @@ export class ReaderComponent {
 
     this.readerCanvas.appendChild(viewport);
 
+    // Bao gồm tất cả các trang ảnh + trang Credit.webp ở cuối
+    const displayPages = [...pages, '/Credit.webp'];
+
     this.canvasCurlEngine = new CanvasCurlEngine({
       viewport,
       canvas,
-      pages,
+      pages: displayPages,
       initialPage: this.currentPageIndex || 0,
       onPageChange: (newPageIdx) => {
         this.currentPageIndex = newPageIdx;
@@ -638,8 +737,8 @@ export class ReaderComponent {
   }
 
   flipPage(direction: number): void {
-    const pages = this.currentChapter?.pages || [];
-    if (pages.length === 0) return;
+    const totalPages = (this.currentChapter?.pages?.length || 0) + 1;
+    if (totalPages === 0) return;
 
     if (this.canvasCurlEngine) {
       this.canvasCurlEngine.flip(direction);
@@ -647,8 +746,8 @@ export class ReaderComponent {
   }
 
   scrollToPage(pageIdx: number): void {
-    const pages = this.currentChapter?.pages || [];
-    if (pageIdx < 0 || pageIdx >= pages.length) return;
+    const totalPages = (this.currentChapter?.pages?.length || 0) + 1;
+    if (pageIdx < 0 || pageIdx >= totalPages) return;
 
     if (this.readingMode.startsWith('horizontal')) {
       this.currentPageIndex = pageIdx;
@@ -693,7 +792,7 @@ export class ReaderComponent {
             DriveHelper.attachImageFallback(img, fileId);
           } else {
             try {
-              const parsed = new URL(pageItem);
+              const parsed = new URL(pageItem, window.location.href);
               if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
                 const img = new Image();
                 img.referrerPolicy = 'no-referrer';
@@ -736,22 +835,34 @@ export class ReaderComponent {
     pages.forEach((_, idx) => {
       const opt = document.createElement('option');
       opt.value = String(idx);
-      opt.textContent = `Trang ${idx + 1} / ${pages.length}`;
+      opt.textContent = `Trang ${idx + 1} / ${pages.length + 1}`;
       this.readerPageSelect?.appendChild(opt);
     });
+
+    // Thêm option cho trang Credit
+    const creditOpt = document.createElement('option');
+    creditOpt.value = String(pages.length);
+    creditOpt.textContent = `Trang ${pages.length + 1} (Credit)`;
+    this.readerPageSelect?.appendChild(creditOpt);
+
     this.readerPageSelect.value = String(this.currentPageIndex);
   }
 
   updateProgressUI(): void {
-    const totalPages = this.currentChapter?.pages?.length || 1;
+    const totalPages = (this.currentChapter?.pages?.length || 0) + 1;
     let percent = 0;
 
     if (this.readingMode.startsWith('horizontal')) {
       percent = Math.round(((this.currentPageIndex + 1) / totalPages) * 100);
     } else {
       if (this.readerMainArea) {
-        const scrollTop = this.readerMainArea.scrollTop;
-        const scrollHeight = this.readerMainArea.scrollHeight - this.readerMainArea.clientHeight;
+        const isMobileWebtoon = window.innerWidth <= 768 && document.body.classList.contains('is-webtoon-reading');
+        const scrollTop = isMobileWebtoon
+          ? (window.scrollY || document.documentElement.scrollTop || 0)
+          : this.readerMainArea.scrollTop;
+        const scrollHeight = isMobileWebtoon
+          ? ((document.documentElement.scrollHeight || document.body.scrollHeight) - window.innerHeight)
+          : (this.readerMainArea.scrollHeight - this.readerMainArea.clientHeight);
         percent = scrollHeight > 0 ? Math.round((scrollTop / scrollHeight) * 100) : 0;
       }
     }

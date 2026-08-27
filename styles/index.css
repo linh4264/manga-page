@@ -2012,6 +2012,555 @@ body.is-webtoon-reading #detail-view {
   -webkit-user-select: none;
 }
 
+/* ==========================================================================
+   Reader Credit Item & Chapter End Interactive Card
+   ========================================================================== */
+.reader-credit-item {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  line-height: 0;
+  position: relative;
+}
+
+.reader-credit-img {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+.reader-chapter-end-card {
+  width: 100%;
+  max-width: 800px;
+  margin: 2.5rem auto 3rem auto;
+  padding: 2rem 1.75rem;
+  text-align: center;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  animation: fadeIn 0.4s ease-out;
+}
+
+.end-card-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.end-card-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px;
+  border-radius: var(--radius-full);
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.end-card-header h3 {
+  font-family: 'Outfit', 'Be Vietnam Pro', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-top: 4px;
+}
+
+.end-card-manga-title {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.end-card-nav-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  width: 100%;
+  max-width: 540px;
+}
+
+.btn-end-nav {
+  padding: 12px 24px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.25s ease;
+  flex: 1;
+  min-width: 200px;
+}
+
+.btn-end-next {
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+}
+
+.btn-end-next:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.6);
+}
+
+.end-card-latest-notice {
+  padding: 12px 20px;
+  border-radius: var(--radius-md);
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  color: #fde68a;
+  font-size: 0.9rem;
+  font-weight: 600;
+  width: 100%;
+}
+
+.end-card-sub-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  width: 100%;
+}
+
+.btn-end-sub {
+  padding: 8px 16px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-end-sub:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+/* ==========================================================================
+   Enhanced Add Chapter Modal Styles
+   ========================================================================== */
+.add-chapter-modal-content {
+  background: #0d121f !important;
+  border: 1px solid rgba(99, 102, 241, 0.25) !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(99, 102, 241, 0.15) !important;
+}
+
+.modal-header-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.modal-header-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(168, 85, 247, 0.25));
+  border: 1px solid rgba(99, 102, 241, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #818cf8;
+  font-size: 1.3rem;
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+  flex-shrink: 0;
+}
+
+.modal-header-subtitle {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Target Manga Info Preview Card */
+.modal-manga-target-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  margin-bottom: 1.25rem;
+}
+
+.target-card-cover {
+  width: 50px;
+  height: 68px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  background: #1e293b;
+}
+
+.target-card-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.target-card-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.target-card-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #818cf8;
+  margin-bottom: 2px;
+}
+
+.target-card-details h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 6px;
+}
+
+.target-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.badge-accent {
+  background: rgba(168, 85, 247, 0.15) !important;
+  color: #c084fc !important;
+  border-color: rgba(168, 85, 247, 0.3) !important;
+}
+
+/* Source Tabs (Segmented Control) */
+.modal-source-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.btn-source-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--transition-fast);
+  text-align: center;
+}
+
+.btn-source-tab:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.btn-source-tab.active {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(168, 85, 247, 0.25));
+  border-color: #818cf8;
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.25);
+}
+
+.tab-icon-folder { color: #fbbf24; }
+.tab-icon-images { color: #34d399; }
+.tab-icon-pdf { color: #f43f5e; }
+
+/* Input with action button */
+.input-with-action {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.input-with-action input {
+  flex: 1;
+}
+
+.btn-scan-folder {
+  padding: 0 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: var(--radius-md);
+}
+
+/* Scan status box */
+.scan-status-box {
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  margin-top: 10px;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  line-height: 1.5;
+}
+
+.scan-status-box .status-icon {
+  font-size: 1.1rem;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.scan-status-box.is-loading {
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  color: #818cf8;
+}
+
+.scan-status-box.is-success {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #34d399;
+}
+
+.scan-status-box.is-error {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+
+/* Scanned Preview Strip */
+.scan-preview-strip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 8px 2px 4px 2px;
+  margin-top: 8px;
+  scrollbar-width: thin;
+}
+
+.scan-thumb-item {
+  position: relative;
+  width: 58px;
+  height: 80px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  flex-shrink: 0;
+  background: #1e293b;
+}
+
+.scan-thumb-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.thumb-num {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  background: rgba(0, 0, 0, 0.75);
+  color: #ffffff;
+  font-size: 0.65rem;
+  padding: 1px 4px;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+.scan-thumb-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 80px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  text-align: center;
+  padding: 4px;
+  flex-shrink: 0;
+}
+
+/* Form Counter Row */
+.form-counter-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+}
+
+/* Admin Auth Card */
+.admin-auth-card {
+  padding: 14px;
+  border-radius: var(--radius-md);
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  margin-top: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.admin-auth-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.admin-auth-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #c7d2fe;
+}
+
+.admin-auth-tag {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+  font-weight: 600;
+}
+
+.password-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.password-input-wrapper input {
+  width: 100%;
+  padding-right: 42px;
+}
+
+.btn-toggle-pw {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.btn-toggle-pw:hover {
+  color: var(--text-primary);
+}
+
+.admin-remember-row {
+  margin-top: 8px;
+}
+
+.remember-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.remember-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent-primary);
+  cursor: pointer;
+}
+
+/* Modal Actions Footer */
+.modal-actions-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  margin-top: 1.5rem;
+}
+
+.btn-modal-cancel {
+  padding: 10px 20px;
+  font-size: 0.9rem;
+  border-radius: var(--radius-md);
+}
+
+.btn-modal-submit {
+  padding: 10px 24px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 18px rgba(99, 102, 241, 0.35);
+}
+
+.btn-modal-submit:hover {
+  box-shadow: 0 6px 24px rgba(99, 102, 241, 0.55);
+}
+
+@media (max-width: 768px) {
+  .modal-source-tabs {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .btn-source-tab {
+    padding: 8px 12px;
+    justify-content: flex-start;
+  }
+
+  .modal-actions-footer {
+    flex-direction: column-reverse;
+    width: 100%;
+  }
+
+  .modal-actions-footer button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .input-with-action {
+    flex-direction: column;
+  }
+
+  .btn-scan-folder {
+    width: 100%;
+    justify-content: center;
+    padding: 10px;
+  }
+}
+
+
 
 
 
