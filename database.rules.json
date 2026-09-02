@@ -11,8 +11,8 @@
       ".read": true,
       "$chapter_id": {
         "$comment_id": {
-          ".write": "!data.exists() && newData.exists()",
-          ".validate": "newData.hasChildren(['author', 'text', 'createdAt']) && newData.child('author').isString() && newData.child('author').val().length <= 50 && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 500 && newData.child('createdAt').isNumber()"
+          ".write": "(!data.exists() && newData.exists()) || (data.exists() && !newData.exists())",
+          ".validate": "!newData.exists() || (newData.hasChildren(['author', 'text', 'createdAt']) && newData.child('author').isString() && newData.child('author').val().length <= 50 && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 500 && newData.child('createdAt').isNumber())"
         }
       }
     }

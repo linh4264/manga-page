@@ -4,6 +4,7 @@
  */
 
 import { Manga } from './types/manga';
+import { StorageService } from './storageService';
 
 // Mã hóa mảng byte bảo mật tránh lộ đường dẫn URL dạng plain-text
 const _OBFUSCATED_SHEET_KEY = [104,116,116,112,115,58,47,47,115,99,114,105,112,116,46,103,111,111,103,108,101,46,99,111,109,47,109,97,99,114,111,115,47,115,47,65,75,102,121,99,98,119,72,108,65,108,97,71,90,106,105,97,81,89,89,101,86,114,57,67,52,87,85,49,67,113,71,112,98,119,51,114,45,98,85,77,109,111,98,75,106,73,103,89,50,101,81,90,105,97,69,108,100,52,106,71,109,57,71,120,45,56,101,72,49,56,98,117,103,47,101,120,101,99];
@@ -53,18 +54,15 @@ export const SheetDatabase = {
       return null;
     }
 
-    // Kiểm tra bộ nhớ đệm LocalStorage nếu không phải force reload
-    if (!force && typeof localStorage !== 'undefined') {
+    // Kiểm tra bộ nhớ đệm StorageService (IndexedDB + Memory) nếu không phải force reload
+    if (!force) {
       try {
-        const lastSync = localStorage.getItem('sheet_manga_sync_time');
-        const cached = localStorage.getItem('sheet_manga_cache');
-        if (lastSync && cached) {
+        const lastSync = StorageService.getSync<string | null>('sheet_manga_sync_time', null);
+        const cached = StorageService.getSync<Manga[] | null>('sheet_manga_cache', null);
+        if (lastSync && cached && Array.isArray(cached) && cached.length > 0) {
           const age = Date.now() - parseInt(lastSync, 10);
           if (age < this.CACHE_TTL_MS) {
-            const parsed = JSON.parse(cached);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              return this.sortCatalogChapters(parsed);
-            }
+            return this.sortCatalogChapters(cached);
           }
         }
       } catch (e) {}
@@ -110,12 +108,12 @@ export const SheetDatabase = {
   },
 
   saveCacheToStorage(catalog: Manga[] | null): void {
-    if (!catalog || !Array.isArray(catalog) || catalog.length === 0 || typeof localStorage === 'undefined') return;
+    if (!catalog || !Array.isArray(catalog) || catalog.length === 0) return;
     try {
-      localStorage.setItem('sheet_manga_cache', JSON.stringify(catalog));
-      localStorage.setItem('sheet_manga_sync_time', String(Date.now()));
+      StorageService.setItem('sheet_manga_cache', catalog);
+      StorageService.setItem('sheet_manga_sync_time', String(Date.now()));
     } catch (e) {
-      console.warn('Không thể ghi cache catalog vào localStorage:', e);
+      console.warn('Không thể ghi cache catalog vào StorageService:', e);
     }
   },
 

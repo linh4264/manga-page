@@ -789,16 +789,6 @@ body.is-webtoon-reading #detail-view {
   max-width: 1200px;
 }
 
-/* Disqus Dark Mode Glassmorphic Styling */
-#disqus_thread {
-  color: var(--text-primary);
-  min-height: 160px;
-}
-
-#disqus_thread iframe {
-  color-scheme: dark;
-}
-
 .reader-canvas.full {
   max-width: 100%;
 }

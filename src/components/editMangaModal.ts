@@ -5,6 +5,7 @@
 
 import { Manga } from '../types/manga';
 import { DriveHelper } from '../driveHelper';
+import { getAdminSession, setAdminSession } from '../utils/security';
 
 export class EditMangaModalComponent {
   state: any;
@@ -145,7 +146,7 @@ export class EditMangaModalComponent {
     if (coverInput) coverInput.value = currentCover;
     if (descInput) descInput.value = manga.description || '';
     if (genresInput) genresInput.value = (manga.genres || []).join(', ');
-    if (passInput) passInput.value = '';
+    if (passInput) passInput.value = getAdminSession() || '';
 
     this.updateLivePreview(currentCover);
     this.modalOverlay?.classList.remove('hidden');
@@ -170,6 +171,8 @@ export class EditMangaModalComponent {
       alert('Vui lòng điền đầy đủ Tên truyện, Link ảnh bìa và Mật khẩu Admin!');
       return;
     }
+
+    setAdminSession(adminPassword);
 
     this.isSubmitting = true;
     const target = e.target as HTMLElement;

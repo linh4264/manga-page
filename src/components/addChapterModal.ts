@@ -6,6 +6,7 @@
 
 import { Manga, Chapter } from '../types/manga';
 import { DriveHelper } from '../driveHelper';
+import { getAdminSession, setAdminSession } from '../utils/security';
 
 export class AddChapterModalComponent {
   state: any;
@@ -173,7 +174,7 @@ export class AddChapterModalComponent {
             <div class="admin-remember-row">
               <label class="remember-label">
                 <input type="checkbox" id="add-chapter-remember-pw" checked>
-                <span>Ghi nhớ mật khẩu trên thiết bị này</span>
+                <span>Ghi nhớ mật khẩu trong phiên này (Tự xóa khi đóng tab)</span>
               </label>
             </div>
           </div>
@@ -411,8 +412,8 @@ export class AddChapterModalComponent {
       previewStrip.innerHTML = '';
     }
 
-    // Auto-fill saved Admin Password from localStorage
-    const savedPw = localStorage.getItem('drive_manga_admin_pw');
+    // Auto-fill saved Admin Password from sessionStorage
+    const savedPw = getAdminSession();
     if (pwInput && savedPw) {
       pwInput.value = savedPw;
     }
@@ -481,9 +482,9 @@ export class AddChapterModalComponent {
       return;
     }
 
-    // Save Admin Password if remember option checked
+    // Save Admin Password in SessionStorage if remember option checked
     if (rememberPw) {
-      localStorage.setItem('drive_manga_admin_pw', adminPassword);
+      setAdminSession(adminPassword);
     }
 
     const submitBtn = this.modalOverlay.querySelector('#btn-submit-add-chapter') as HTMLButtonElement | null;

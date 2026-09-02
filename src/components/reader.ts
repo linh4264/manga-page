@@ -9,6 +9,7 @@ import { PdfHelper } from '../pdfHelper';
 import { FirebaseService } from '../firebaseService';
 import { CanvasCurlEngine } from '../reader/canvasCurlEngine';
 import { SheetDatabase } from '../sheetDatabase';
+import { escapeHtml, hasAdminSession } from '../utils/security';
 
 export class ReaderComponent {
   state: any;
@@ -326,9 +327,8 @@ export class ReaderComponent {
     // Lưu lịch sử đọc
     this.state.saveReadingHistory(this.currentManga.id, chapter.id, chapter.title);
 
-    // Tải bình luận
+    // Tải bình luận trực tuyến
     this.loadComments(chapter.id);
-    this.initDisqusComments(this.currentManga.id, chapter.id);
 
     // Update URL hash
     if (this.state?.router && !window.location.hash.includes(chapter.id)) {
@@ -388,23 +388,56 @@ export class ReaderComponent {
       return;
     }
 
+    const isAdmin = hasAdminSession();
+
     comments.forEach(c => {
       const item = document.createElement('div');
       item.className = 'comment-item';
       item.style.cssText = 'padding: 8px 10px; background: rgba(255,255,255,0.03); border-radius: var(--radius-sm); margin-bottom: 6px; border: 1px solid rgba(255,255,255,0.05);';
 
       const header = document.createElement('div');
-      header.style.cssText = 'display: flex; justify-content: space-between; font-size: 0.75rem; color: #818cf8; margin-bottom: 3px;';
+      header.style.cssText = 'display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: #818cf8; margin-bottom: 3px;';
+
+      const authorGroup = document.createElement('div');
+      authorGroup.style.cssText = 'display: flex; align-items: center; gap: 6px;';
 
       const authorStrong = document.createElement('strong');
       authorStrong.textContent = c.author || 'Độc giả';
+      authorGroup.appendChild(authorStrong);
 
       const timeSpan = document.createElement('span');
       timeSpan.style.color = 'var(--text-muted)';
       timeSpan.textContent = c.timestamp || 'Vừa xong';
 
-      header.appendChild(authorStrong);
-      header.appendChild(timeSpan);
+      const metaGroup = document.createElement('div');
+      metaGroup.style.cssText = 'display: flex; align-items: center; gap: 8px;';
+      metaGroup.appendChild(timeSpan);
+
+      // Nếu đang có phiên Admin -> Cho phép xóa bình luận vi phạm
+      if (isAdmin && c.id) {
+        const delBtn = document.createElement('button');
+        delBtn.className = 'btn-delete-comment';
+        delBtn.innerHTML = '<i class="fas fa-trash-alt" style="color: #ef4444; font-size: 0.72rem;"></i>';
+        delBtn.title = 'Xóa bình luận này (Quyền Admin)';
+        delBtn.style.cssText = 'background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 4px; padding: 2px 6px; cursor: pointer;';
+        delBtn.onclick = async (e) => {
+          e.stopPropagation();
+          if (confirm(`Xác nhận xóa bình luận của "${c.author}"?`)) {
+            if (this.currentChapter?.id && c.id) {
+              const ok = await FirebaseService.deleteChapterComment(this.currentChapter.id, c.id);
+              if (ok) {
+                item.remove();
+              } else {
+                alert('Không thể xóa bình luận. Vui lòng kiểm tra lại!');
+              }
+            }
+          }
+        };
+        metaGroup.appendChild(delBtn);
+      }
+
+      header.appendChild(authorGroup);
+      header.appendChild(metaGroup);
 
       const bodyDiv = document.createElement('div');
       bodyDiv.style.cssText = 'font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4; word-break: break-word;';
@@ -438,9 +471,9 @@ export class ReaderComponent {
     try {
       await FirebaseService.addChapterComment(this.currentChapter.id, author || 'Độc giả', text);
       textInput.value = '';
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Lỗi gửi bình luận:', err);
-      alert('Không thể gửi bình luận trực tuyến. Vui lòng kiểm tra lại kết nối!');
+      alert(err?.message || 'Không thể gửi bình luận trực tuyến. Vui lòng kiểm tra lại kết nối!');
     } finally {
       if (submitBtn) {
         submitBtn.disabled = false;
@@ -454,57 +487,6 @@ export class ReaderComponent {
     const url = window.location.href;
     const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
     window.open(shareUrl, 'fbShareWindow', 'height=450, width=550, top=' + (window.innerHeight / 2 - 225) + ', left=' + (window.innerWidth / 2 - 275) + ', toolbar=0, location=0, menubar=0, directories=0, scrollbars=0');
-  }
-
-  initDisqusComments(mangaId: string, chapterId: string): void {
-    const disqusContainer = document.getElementById('disqus_thread');
-    if (!disqusContainer || !this.currentManga || !this.currentChapter) return;
-
-    const shortname = 'drivemanga';
-    const pageIdentifier = `${mangaId}_${chapterId}`;
-    const pageUrl = window.location.href;
-    const pageTitle = `${this.currentManga.title} - ${this.currentChapter.title}`;
-
-    const showFallbackUI = () => {
-      if (disqusContainer) {
-        disqusContainer.innerHTML = `
-          <div style="padding: 1.5rem; text-align: center; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-subtle); border-radius: var(--radius-md);">
-            <i class="fab fa-comments" style="font-size: 2rem; color: #818cf8; margin-bottom: 0.5rem;"></i>
-            <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem;">Khu vực bình luận cộng đồng Disqus</p>
-            <a href="https://disqus.com" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="font-size: 0.8rem; padding: 6px 14px; border-radius: var(--radius-sm);">Mở Trang Bình Luận</a>
-          </div>
-        `;
-      }
-    };
-
-    if (window.DISQUS) {
-      try {
-        window.DISQUS.reset({
-          reload: true,
-          config: function () {
-            this.page.identifier = pageIdentifier;
-            this.page.url = pageUrl;
-            this.page.title = pageTitle;
-            this.language = 'vi';
-          }
-        });
-      } catch (err) {
-        showFallbackUI();
-      }
-    } else {
-      window.disqus_config = function () {
-        this.page.identifier = pageIdentifier;
-        this.page.url = pageUrl;
-        this.page.title = pageTitle;
-        this.language = 'vi';
-      };
-
-      const d = document, s = d.createElement('script');
-      s.src = `https://${shortname}.disqus.com/embed.js`;
-      s.setAttribute('data-timestamp', String(+new Date()));
-      s.onerror = showFallbackUI;
-      (d.head || d.body).appendChild(s);
-    }
   }
 
   renderPages(): void {

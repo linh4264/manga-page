@@ -5,6 +5,8 @@
 import { Manga, Chapter } from '../types/manga';
 import { DriveHelper } from '../driveHelper';
 import { FirebaseService } from '../firebaseService';
+import { StorageService } from '../storageService';
+import { escapeHtml, sanitizeUrl } from '../utils/security';
 
 export class LibraryComponent {
   state: any;
@@ -74,7 +76,7 @@ export class LibraryComponent {
     if (!this.mangaGrid) return;
     
     let catalog: Manga[] = this.state.getAllManga();
-    const bookmarks: string[] = JSON.parse(localStorage.getItem('manga_bookmarks') || '[]');
+    const bookmarks: string[] = StorageService.getSync<string[]>('manga_bookmarks', []);
 
     // Filter by genre
     if (this.activeGenre === 'Bookmarks') {
@@ -133,21 +135,27 @@ export class LibraryComponent {
     const liveViews = FirebaseService.getViewCount(manga.id);
     const formattedViews = FirebaseService.formatViewCount(liveViews || manga.views);
 
+    const safeTitle = escapeHtml(manga.title);
+    const safeCoverSrc = sanitizeUrl(coverSrc, 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=600&auto=format&fit=crop&q=80');
+    const safeStatus = escapeHtml(manga.status || 'Đang tiến hành');
+    const safeRating = escapeHtml(String(manga.rating || '4.9'));
+    const safeMangaId = escapeHtml(manga.id);
+
     card.innerHTML = `
       <div class="card-cover">
-        <img src="${coverSrc || 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=600&auto=format&fit=crop&q=80'}" alt="${manga.title}" loading="lazy" referrerpolicy="no-referrer">
+        <img src="${safeCoverSrc}" alt="${safeTitle}" loading="lazy" referrerpolicy="no-referrer">
         <div class="card-badge-top">
-          <span class="badge">${manga.status || 'Đang tiến hành'}</span>
+          <span class="badge">${safeStatus}</span>
         </div>
         <div class="card-rating">
-          <i class="fas fa-star"></i> ${manga.rating || '4.9'}
+          <i class="fas fa-star"></i> ${safeRating}
         </div>
       </div>
       <div class="card-info">
-        <h3 class="card-title">${manga.title}</h3>
+        <h3 class="card-title">${safeTitle}</h3>
         <div class="card-meta">
           <span><i class="far fa-file-alt"></i> ${manga.chapters?.length || 0} tập</span>
-          <span><i class="far fa-eye"></i> <span data-manga-view-id="${manga.id}">${formattedViews}</span></span>
+          <span><i class="far fa-eye"></i> <span data-manga-view-id="${safeMangaId}">${formattedViews}</span></span>
         </div>
       </div>
     `;
@@ -206,6 +214,16 @@ export class LibraryComponent {
     const currentOrder = this.chapterSortOrder || 'asc';
     const displayChapters = this.sortChapters(manga.chapters || [], currentOrder);
 
+    const safeTitle = escapeHtml(manga.title);
+    const safeAltTitle = escapeHtml(manga.originalTitle || manga.author || '');
+    const safeDesc = escapeHtml(manga.description || 'Chưa có mô tả cho bộ truyện này.');
+    const safeCoverSrc = sanitizeUrl(coverSrc, 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=600&auto=format&fit=crop&q=80');
+    const safeGenres = (manga.genres || []).map(g => `<span class="badge">${escapeHtml(g)}</span>`).join('');
+    const safeLastReadTitle = lastRead ? escapeHtml(lastRead.chapterTitle) : '';
+    const safeStatus = escapeHtml(manga.status || 'Đang tiến hành');
+    const safeRating = escapeHtml(String(manga.rating || '4.9'));
+    const safeMangaId = escapeHtml(manga.id);
+
     this.detailContainer.innerHTML = `
       <button id="btn-back-library" class="btn-secondary" style="margin-bottom: 1.5rem;">
         <i class="fas fa-arrow-left"></i> Quay lại Thư viện
@@ -213,31 +231,31 @@ export class LibraryComponent {
 
       <div class="glass-panel detail-header-card">
         <div class="detail-cover" id="detail-cover-clickable" style="cursor: pointer; position: relative;" title="Bấm để thay đổi ảnh bìa">
-          <img src="${coverSrc || 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=600&auto=format&fit=crop&q=80'}" alt="${manga.title}">
+          <img src="${safeCoverSrc}" alt="${safeTitle}">
           <div style="position: absolute; bottom: 8px; right: 8px; background: rgba(15, 23, 42, 0.85); color: #a5b4fc; padding: 4px 8px; border-radius: var(--radius-sm); font-size: 0.72rem; border: 1px solid rgba(255, 255, 255, 0.15);">
             <i class="fas fa-camera"></i> Đổi ảnh
           </div>
         </div>
         <div class="detail-info">
-          <h1>${manga.title}</h1>
-          <div class="alt-title">${manga.originalTitle || manga.author || ''}</div>
+          <h1>${safeTitle}</h1>
+          <div class="alt-title">${safeAltTitle}</div>
           
           <div class="detail-stats-bar" style="display: flex; flex-wrap: wrap; gap: 1.25rem; align-items: center; margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.9rem;">
-            <span><i class="far fa-eye" style="color: #60a5fa;"></i> <strong style="color: #ffffff;" data-manga-view-id="${manga.id}">${formattedViews}</strong> lượt xem</span>
+            <span><i class="far fa-eye" style="color: #60a5fa;"></i> <strong style="color: #ffffff;" data-manga-view-id="${safeMangaId}">${formattedViews}</strong> lượt xem</span>
             <span><i class="far fa-file-alt" style="color: #a855f7;"></i> <strong style="color: #ffffff;">${manga.chapters?.length || 0}</strong> tập</span>
-            <span><i class="fas fa-star" style="color: #fbbf24;"></i> <strong style="color: #ffffff;">${manga.rating || '4.9'}</strong></span>
-            <span><i class="fas fa-check-circle" style="color: #34d399;"></i> ${manga.status || 'Đang tiến hành'}</span>
+            <span><i class="fas fa-star" style="color: #fbbf24;"></i> <strong style="color: #ffffff;">${safeRating}</strong></span>
+            <span><i class="fas fa-check-circle" style="color: #34d399;"></i> ${safeStatus}</span>
           </div>
 
           <div class="detail-tags">
-            ${(manga.genres || []).map(g => `<span class="badge">${g}</span>`).join('')}
+            ${safeGenres}
           </div>
 
-          <p class="detail-description">${manga.description || 'Chưa có mô tả cho bộ truyện này.'}</p>
+          <p class="detail-description">${safeDesc}</p>
 
           <div class="detail-actions">
             <button id="btn-start-reading" class="btn-primary">
-              <i class="fas fa-book-open"></i> ${lastRead ? 'Đọc tiếp (' + lastRead.chapterTitle + ')' : 'Đọc từ chương 1'}
+              <i class="fas fa-book-open"></i> ${lastRead ? 'Đọc tiếp (' + safeLastReadTitle + ')' : 'Đọc từ chương 1'}
             </button>
             <button id="btn-edit-manga-cover" class="btn-secondary" title="Thay đổi ảnh bìa hoặc sửa thông tin truyện">
               <i class="fas fa-image" style="color: #a855f7;"></i> Đổi Ảnh Bìa
@@ -265,12 +283,12 @@ export class LibraryComponent {
         </div>
         <div class="chapter-grid">
           ${displayChapters.map(ch => `
-            <div class="chapter-item" data-chapter-id="${ch.id}" style="display: flex; align-items: center; justify-content: space-between;">
+            <div class="chapter-item" data-chapter-id="${escapeHtml(ch.id)}" style="display: flex; align-items: center; justify-content: space-between;">
               <div class="chapter-info-click" style="flex: 1; display: flex; justify-content: space-between; align-items: center; margin-right: 12px; cursor: pointer;">
-                <span class="chapter-title-text">${ch.title}</span>
-                <span class="chapter-date"><i class="far fa-clock"></i> ${ch.updatedAt || 'Hôm nay'}</span>
+                <span class="chapter-title-text">${escapeHtml(ch.title)}</span>
+                <span class="chapter-date"><i class="far fa-clock"></i> ${escapeHtml(ch.updatedAt || 'Hôm nay')}</span>
               </div>
-              <button class="btn-edit-chapter btn-secondary" data-chapter-id="${ch.id}" style="padding: 4px 10px; font-size: 0.75rem; border-radius: var(--radius-sm);" title="Chỉnh sửa nội dung chương">
+              <button class="btn-edit-chapter btn-secondary" data-chapter-id="${escapeHtml(ch.id)}" style="padding: 4px 10px; font-size: 0.75rem; border-radius: var(--radius-sm);" title="Chỉnh sửa nội dung chương">
                 <i class="fas fa-edit" style="color: #818cf8;"></i> Sửa Chương
               </button>
             </div>
@@ -322,14 +340,8 @@ export class LibraryComponent {
     });
 
     document.getElementById('btn-toggle-bookmark')?.addEventListener('click', () => {
-      let bMarks: string[] = JSON.parse(localStorage.getItem('manga_bookmarks') || '[]');
-      if (bMarks.includes(manga.id)) {
-        bMarks = bMarks.filter(id => id !== manga.id);
-      } else {
-        bMarks.push(manga.id);
-      }
-      localStorage.setItem('manga_bookmarks', JSON.stringify(bMarks));
-      this.showDetailView(manga); // Refresh view
+      this.state.toggleBookmark(manga.id);
+      this.showDetailView(manga, false); // Refresh view
     });
 
     // Chapter item click handlers (read chapter or edit chapter link)

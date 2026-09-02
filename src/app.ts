@@ -5,6 +5,7 @@
 import { Manga, CommentItem, ReadingHistoryItem } from './types/manga';
 import { SAMPLE_MANGA_DATA } from './data/sampleManga';
 import { SheetDatabase } from './sheetDatabase';
+import { StorageService } from './storageService';
 import { AppRouter } from './router';
 import { LibraryComponent } from './components/library';
 import { ReaderComponent } from './components/reader';
@@ -26,14 +27,8 @@ export class MangaApp {
   router!: AppRouter;
 
   constructor() {
-    this.customMangaList = JSON.parse(localStorage.getItem('custom_manga_list') || '[]');
-    let cached: Manga[] = [];
-    try {
-      cached = JSON.parse(localStorage.getItem('sheet_manga_cache') || '[]');
-    } catch (e) {
-      cached = [];
-    }
-    this.sheetMangaList = cached;
+    this.customMangaList = StorageService.getSync<Manga[]>('custom_manga_list', []);
+    this.sheetMangaList = StorageService.getSync<Manga[]>('sheet_manga_cache', []);
     
     this.init();
   }
@@ -43,9 +38,9 @@ export class MangaApp {
     if (this.sheetMangaList && this.sheetMangaList.length > 0) {
       return this.sheetMangaList;
     }
-    // 2. Dự phòng bộ nhớ đệm Cache LocalStorage
+    // 2. Dự phòng bộ nhớ đệm Cache StorageService (IndexedDB + Memory)
     try {
-      const cached = JSON.parse(localStorage.getItem('sheet_manga_cache') || '[]');
+      const cached = StorageService.getSync<Manga[]>('sheet_manga_cache', []);
       if (cached && cached.length > 0) {
         return cached;
       }
@@ -56,40 +51,40 @@ export class MangaApp {
 
   isBookmarked(mangaId: string): boolean {
     if (!mangaId) return false;
-    const bookmarks: string[] = JSON.parse(localStorage.getItem('manga_bookmarks') || '[]');
+    const bookmarks = StorageService.getSync<string[]>('manga_bookmarks', []);
     return bookmarks.includes(mangaId);
   }
 
   toggleBookmark(mangaId: string): boolean {
     if (!mangaId) return false;
-    let bookmarks: string[] = JSON.parse(localStorage.getItem('manga_bookmarks') || '[]');
+    let bookmarks = StorageService.getSync<string[]>('manga_bookmarks', []);
     const isBookmarked = bookmarks.includes(mangaId);
     if (isBookmarked) {
       bookmarks = bookmarks.filter(id => id !== mangaId);
     } else {
       bookmarks.push(mangaId);
     }
-    localStorage.setItem('manga_bookmarks', JSON.stringify(bookmarks));
+    StorageService.setItem('manga_bookmarks', bookmarks);
     return !isBookmarked;
   }
 
   saveReadingHistory(mangaId: string, chapterId: string, chapterTitle: string): void {
     if (!mangaId) return;
     try {
-      const history: Record<string, ReadingHistoryItem> = JSON.parse(localStorage.getItem('reading_history') || '{}');
+      const history = StorageService.getSync<Record<string, ReadingHistoryItem>>('reading_history', {});
       history[mangaId] = {
         chapterId: chapterId,
         chapterTitle: chapterTitle,
         updatedAt: new Date().toISOString()
       };
-      localStorage.setItem('reading_history', JSON.stringify(history));
+      StorageService.setItem('reading_history', history);
     } catch (e) {}
   }
 
   getReadingHistory(mangaId: string): ReadingHistoryItem | null {
     if (!mangaId) return null;
     try {
-      const history: Record<string, ReadingHistoryItem> = JSON.parse(localStorage.getItem('reading_history') || '{}');
+      const history = StorageService.getSync<Record<string, ReadingHistoryItem>>('reading_history', {});
       return history[mangaId] || null;
     } catch (e) {
       return null;
@@ -254,12 +249,8 @@ export class MangaApp {
         const liveData = await SheetDatabase.fetchMangaCatalog(force);
         if (liveData && liveData.length > 0) {
           this.sheetMangaList = liveData;
-          try {
-            localStorage.setItem('sheet_manga_cache', JSON.stringify(liveData));
-            localStorage.setItem('sheet_manga_sync_time', String(now));
-          } catch (e) {
-            console.warn('Cannot write catalog to localStorage cache:', e);
-          }
+          StorageService.setItem('sheet_manga_cache', liveData);
+          StorageService.setItem('sheet_manga_sync_time', String(now));
 
           // Cập nhật lại view hiện tại (Library, Detail hoặc Reader) với dữ liệu mới nhất
           if (this.router) {

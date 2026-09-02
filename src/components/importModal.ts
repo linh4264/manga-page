@@ -4,6 +4,7 @@
 
 import { Manga } from '../types/manga';
 import { DriveHelper } from '../driveHelper';
+import { getAdminSession, setAdminSession } from '../utils/security';
 
 export class ImportModalComponent {
   state: any;
@@ -226,6 +227,10 @@ export class ImportModalComponent {
     this.scannedPages = [];
     const statusEl = document.getElementById('import-folder-scan-status');
     if (statusEl) statusEl.style.display = 'none';
+
+    const pwInput = document.getElementById('import-admin-password') as HTMLInputElement | null;
+    if (pwInput) pwInput.value = getAdminSession() || '';
+
     this.modalOverlay?.classList.remove('hidden');
   }
 
@@ -288,6 +293,7 @@ export class ImportModalComponent {
       alert('Vui lòng nhập Mật khẩu Admin để xác thực quyền đăng truyện!');
       return;
     }
+    setAdminSession(adminPassword);
 
     const submitBtn = this.modalOverlay.querySelector('button[type="submit"]') as HTMLButtonElement | null;
     if (submitBtn) {

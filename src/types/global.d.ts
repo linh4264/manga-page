@@ -25,9 +25,9 @@ declare global {
     firebase?: any;
     pdfjsLib?: any;
     PageFlip?: any;
-    FB?: any;
     SAMPLE_MANGA_DATA?: any[];
     SheetDatabase?: any;
+    StorageService?: any;
     DriveHelper?: any;
     PdfHelper?: any;
     FirebaseService?: any;
@@ -40,8 +40,6 @@ declare global {
     AppRouter?: any;
     app?: any;
     currentReaderComponent?: any;
-    DISQUS?: any;
-    disqus_config?: any;
   }
 }
 

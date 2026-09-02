@@ -4,6 +4,7 @@
  */
 
 import { CommentItem } from './types/manga';
+import { isSpamOrProfane } from './utils/security';
 
 const firebaseConfig = {
   apiKey: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_API_KEY) || "AIzaSyAQPv0p09EmCdPisFdluwEpsIZh4d653A4",
@@ -250,14 +251,34 @@ export class FirebaseViewService {
     return [];
   }
 
+  private lastCommentTime = 0;
+
   /**
    * Gửi bình luận online thật lên Firebase Realtime Database
+   * Có tích hợp bộ lọc spam, từ ngữ cấm và hạn chế tần suất gửi (Client-side Rate Limiting)
    */
   async addChapterComment(chapterId: string, author: string, text: string): Promise<CommentItem> {
-    const key = this.sanitizeChapterKey(chapterId);
+    const now = Date.now();
+    // Chống spam: Giãn cách tối thiểu 3 giây giữa 2 lần bình luận trên cùng client
+    if (now - this.lastCommentTime < 3000) {
+      throw new Error('Bạn đang gửi bình luận quá nhanh. Vui lòng đợi vài giây!');
+    }
+
     const cleanAuthor = (author || 'Độc giả').trim().slice(0, 50);
     const cleanText = text.trim().slice(0, 500);
-    const now = Date.now();
+
+    if (!cleanText) {
+      throw new Error('Nội dung bình luận không được để trống!');
+    }
+
+    // Kiểm tra bộ lọc spam & nội dung độc hại
+    const spamCheck = isSpamOrProfane(cleanText) || isSpamOrProfane(cleanAuthor);
+    if (spamCheck.isBlocked) {
+      throw new Error(`Bình luận bị từ chối: ${spamCheck.reason || 'Nội dung không hợp lệ'}`);
+    }
+
+    this.lastCommentTime = now;
+    const key = this.sanitizeChapterKey(chapterId);
     const formattedTime = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
 
     const newComment: CommentItem = {
@@ -286,6 +307,36 @@ export class FirebaseViewService {
       newComment.id = resJson.name;
     }
     return newComment;
+  }
+
+  /**
+   * Xóa bình luận khỏi Firebase Realtime Database (Dành cho Admin kiểm duyệt)
+   */
+  async deleteChapterComment(chapterId: string, commentId: string): Promise<boolean> {
+    if (!chapterId || !commentId) return false;
+    const chapKey = this.sanitizeChapterKey(chapterId);
+    const commKey = String(commentId).trim();
+
+    if (this.db) {
+      try {
+        const commentRef = this.db.ref(`chapter_comments/${chapKey}/${commKey}`);
+        await commentRef.remove();
+        return true;
+      } catch (err) {
+        console.warn('Lỗi khi xóa bình luận qua Firebase SDK:', err);
+      }
+    }
+
+    // Fallback REST DELETE
+    try {
+      const res = await fetch(`${firebaseConfig.databaseURL}/chapter_comments/${chapKey}/${commKey}.json`, {
+        method: 'DELETE'
+      });
+      return res.ok;
+    } catch (err) {
+      console.warn('Lỗi khi xóa bình luận qua REST:', err);
+      return false;
+    }
   }
 
   subscribe(callback: (views: Record<string, number>) => void): void {

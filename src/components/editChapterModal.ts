@@ -4,6 +4,7 @@
 
 import { Manga, Chapter } from '../types/manga';
 import { DriveHelper } from '../driveHelper';
+import { getAdminSession, setAdminSession } from '../utils/security';
 
 export class EditChapterModalComponent {
   state: any;
@@ -242,8 +243,12 @@ export class EditChapterModalComponent {
       if (imagesTextarea) {
         imagesTextarea.value = (chapter.pages || []).join('\n');
       }
-      const btnImages = this.modalOverlay?.querySelector('#btn-edit-source-images') as HTMLElement | null;
-      btnImages?.click();
+    }
+
+    const pwInput = this.modalOverlay?.querySelector('#edit-chapter-admin-password') as HTMLInputElement | null;
+    const savedPw = getAdminSession();
+    if (pwInput && savedPw) {
+      pwInput.value = savedPw;
     }
 
     this.modalOverlay?.classList.remove('hidden');
@@ -304,6 +309,7 @@ export class EditChapterModalComponent {
       alert('Vui lòng nhập Mật khẩu Admin để xác thực quyền chỉnh sửa!');
       return;
     }
+    setAdminSession(adminPassword);
 
     const submitBtn = this.modalOverlay.querySelector('button[type="submit"]') as HTMLButtonElement | null;
     if (submitBtn) {
