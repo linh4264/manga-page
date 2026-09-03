@@ -110,15 +110,25 @@ export const DriveHelper = {
   },
 
   /**
-   * Get optimized WebP direct image URL via global free edge CDN (wsrv.nl)
+   * Get direct WebP image URL via global free edge CDN (wsrv.nl).
+   * - Khi đọc truyện (width === null): Chạy ở chế độ Raw Passthrough Mode (Option B).
+   *   Tải trực tiếp file WebP gốc từ drive.google.com/uc?export=view và cache qua Cloudflare Edge.
+   *   Hoàn toàn KHÔNG giải nén hay nén lại, giữ 100% chất lượng gốc và triệt tiêu nén kép.
+   * - Khi cần thumbnail nhỏ (width > 0): Co kích thước phù hợp để tải nhanh danh mục.
    */
   getWebpUrl(fileId?: string | null, width: number | null = null): string | null {
     if (!fileId) return null;
     const cleanId = this.extractFileId(fileId) || (/^[a-zA-Z0-9_-]{20,60}$/.test(fileId.trim()) ? fileId.trim() : null);
     if (!cleanId) return null;
     const encodedId = encodeURIComponent(cleanId);
-    const validWidth = (width && width > 0 && width <= 4000) ? Math.floor(width) : 1600;
-    return `https://wsrv.nl/?url=https%3A%2F%2Fdrive.google.com%2Fthumbnail%3Fid%3D${encodedId}%26sz%3Dw${validWidth}&output=webp&q=82`;
+
+    // Option B: Raw Passthrough Mode khi đọc chương truyện
+    if (!width || width <= 0) {
+      return `https://wsrv.nl/?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Dview%26id%3D${encodedId}`;
+    }
+
+    const validWidth = Math.min(4000, Math.floor(width));
+    return `https://wsrv.nl/?url=https%3A%2F%2Fdrive.google.com%2Fthumbnail%3Fid%3D${encodedId}%26sz%3Dw${validWidth}&w=${validWidth}&we=true&output=webp&q=90`;
   },
 
   /**
@@ -138,7 +148,7 @@ export const DriveHelper = {
     // Edge CDN Proxy Endpoint (Tự động kích hoạt khi chạy trên Live Domain Cloudflare)
     const isLiveDomain = typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
     const proxyEndpoint = `/api/image-proxy?id=${encodedId}${validWidth ? '&w=' + validWidth : '&w=1600'}`;
-    const webpUrl = `https://wsrv.nl/?url=https%3A%2F%2Fdrive.google.com%2Fthumbnail%3Fid%3D${encodedId}%26sz%3Dw${validWidth || 1600}&output=webp&q=82`;
+    const webpUrl = this.getWebpUrl(cleanId, validWidth) || '';
 
     return {
       edgeProxy: isLiveDomain ? proxyEndpoint : null,
@@ -162,10 +172,10 @@ export const DriveHelper = {
     const cleanId = this.extractFileId(fileId) || (/^[a-zA-Z0-9_-]{20,60}$/.test(fileId.trim()) ? fileId.trim() : null);
     const encodedId = cleanId ? encodeURIComponent(cleanId) : '';
     const validWidth = (targetWidth && targetWidth > 0 && targetWidth <= 4000) ? Math.floor(targetWidth) : null;
-    const webpUrl = encodedId ? `https://wsrv.nl/?url=https%3A%2F%2Fdrive.google.com%2Fthumbnail%3Fid%3D${encodedId}%26sz%3Dw${validWidth || 1600}&output=webp&q=82` : null;
+    const webpUrl = this.getWebpUrl(cleanId, validWidth);
 
     // Danh sách nguồn tải theo thứ tự ưu tiên:
-    // 1. High-Performance Free Global WebP CDN (wsrv.nl - tự nén WebP, cache Edge toàn cầu, $0, gánh tải thay Drive)
+    // 1. High-Performance Free Global WebP CDN (wsrv.nl - Raw Passthrough cache Edge toàn cầu, $0, không nén kép)
     // 2. Google Direct UserContent CDN (lh3.googleusercontent.com/d/...)
     // 3. First-Party Cloudflare Edge Proxy (/api/image-proxy)
     // 4. Google Drive Thumbnail CDN (drive.google.com/thumbnail)

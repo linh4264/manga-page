@@ -68,7 +68,13 @@ self.addEventListener('fetch', (event) => {
         }
 
         // Check if query parameter has Google Drive file ID to match across proxy/CDN formats
-        const fileId = url.searchParams.get('id');
+        let fileId = url.searchParams.get('id');
+        if (!fileId && url.searchParams.has('url')) {
+          try {
+            const innerUrl = new URL(url.searchParams.get('url'));
+            fileId = innerUrl.searchParams.get('id');
+          } catch (e) {}
+        }
         if (fileId) {
           const matchedFallback = await chapterCache.match(`https://lh3.googleusercontent.com/d/${fileId}=w1600`);
           if (matchedFallback) {

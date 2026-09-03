@@ -5,32 +5,46 @@ import { ReadingHistoryItem, Manga } from '../src/types/manga';
 
 describe('Zero-Cost ($0/Month) Architectural Enhancements', () => {
   describe('1. Free Global WebP CDN (wsrv.nl)', () => {
-    it('generates high-performance WebP CDN URL with custom width', () => {
+    it('generates high-performance WebP CDN URL with custom width for thumbnails', () => {
       const fileId = '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms';
       const webpUrl = DriveHelper.getWebpUrl(fileId, 800);
 
-      expect(webpUrl).toBe(
-        `https://wsrv.nl/?url=https%3A%2F%2Fdrive.google.com%2Fthumbnail%3Fid%3D${fileId}%26sz%3Dw800&output=webp&q=82`
-      );
+      expect(webpUrl).toContain('drive.google.com%2Fthumbnail');
+      expect(webpUrl).toContain('w=800');
+      expect(webpUrl).toContain('output=webp');
+      expect(webpUrl).toContain('q=90');
     });
 
-    it('returns default width 1600 if width is omitted in getWebpUrl', () => {
+    it('returns raw passthrough WebP URL (Option B, zero recompression) when width is omitted', () => {
       const fileId = '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms';
       const webpUrl = DriveHelper.getWebpUrl(fileId);
 
-      expect(webpUrl).toContain('sz%3Dw1600');
-      expect(webpUrl).toContain('output=webp');
-      expect(webpUrl).toContain('q=82');
+      // Raw Passthrough from uc?export=view with NO lossy recompression params
+      expect(webpUrl).toBe(
+        `https://wsrv.nl/?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Dview%26id%3D${fileId}`
+      );
+      expect(webpUrl).not.toContain('output=webp');
+      expect(webpUrl).not.toContain('q=');
     });
 
-    it('includes webpCdn in getImageUrls response', () => {
+    it('includes raw passthrough webpCdn in getImageUrls when width is omitted', () => {
+      const fileId = '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms';
+      const urls = DriveHelper.getImageUrls(fileId);
+
+      expect(urls.webpCdn).toBeDefined();
+      expect(urls.webpCdn).toContain('wsrv.nl');
+      expect(urls.webpCdn).toContain('uc%3Fexport%3Dview');
+      expect(urls.webpCdn).not.toContain('q=');
+    });
+
+    it('includes resized webpCdn in getImageUrls response when width is specified', () => {
       const fileId = '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms';
       const urls = DriveHelper.getImageUrls(fileId, 1200);
 
       expect(urls.webpCdn).toBeDefined();
       expect(urls.webpCdn).toContain('wsrv.nl');
       expect(urls.webpCdn).toContain(fileId);
-      expect(urls.webpCdn).toContain('w1200');
+      expect(urls.webpCdn).toContain('w=1200');
       expect(urls.webpCdn).toContain('output=webp');
     });
 
