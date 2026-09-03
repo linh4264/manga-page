@@ -69,14 +69,15 @@ export class MangaApp {
     return !isBookmarked;
   }
 
-  saveReadingHistory(mangaId: string, chapterId: string, chapterTitle: string): void {
+  saveReadingHistory(mangaId: string, chapterId: string, chapterTitle: string, pageIndex = 0): void {
     if (!mangaId) return;
     try {
       const history = StorageService.getSync<Record<string, ReadingHistoryItem>>('reading_history', {});
       history[mangaId] = {
         chapterId: chapterId,
         chapterTitle: chapterTitle,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
+        pageIndex: Math.max(0, pageIndex)
       };
       StorageService.setItem('reading_history', history);
     } catch (e) {}

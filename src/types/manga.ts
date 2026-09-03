@@ -85,6 +85,7 @@ export interface ReadingHistoryItem {
   chapterId: string;
   chapterTitle: string;
   updatedAt: string;
+  pageIndex?: number;
 }
 
 export interface DriveImageUrls {
@@ -93,6 +94,7 @@ export interface DriveImageUrls {
   fallback1: string;
   fallback2: string;
   fallback3: string;
+  webpCdn?: string;
 }
 
 export interface FolderScanResult {

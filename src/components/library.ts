@@ -56,9 +56,25 @@ export class LibraryComponent {
     this.setupGenreFilter();
   }
 
+  getAvailableGenres(): string[] {
+    const catalog: Manga[] = this.state.getAllManga() || [];
+    const genreSet = new Set<string>();
+    catalog.forEach(m => {
+      if (Array.isArray(m.genres)) {
+        m.genres.forEach(g => {
+          const trimmed = g.trim();
+          if (trimmed) genreSet.add(trimmed);
+        });
+      }
+    });
+
+    const sortedGenres = Array.from(genreSet).sort((a, b) => a.localeCompare(b, 'vi'));
+    return ['All', ...sortedGenres, 'Bookmarks'];
+  }
+
   setupGenreFilter(): void {
     if (!this.genreBar) return;
-    const genres = ['All', 'Action', 'Fantasy', 'Sci-Fi', 'Manhwa', 'Shounen', 'Google Drive', 'Bookmarks'];
+    const genres = this.getAvailableGenres();
     
     this.genreBar.innerHTML = '';
     genres.forEach(genre => {
@@ -223,6 +239,11 @@ export class LibraryComponent {
     const safeCoverSrc = sanitizeUrl(coverSrc, 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=600&auto=format&fit=crop&q=80');
     const safeGenres = (manga.genres || []).map(g => `<span class="badge">${escapeHtml(g)}</span>`).join('');
     const safeLastReadTitle = lastRead ? escapeHtml(lastRead.chapterTitle) : '';
+    let resumeText = 'Đọc từ chương 1';
+    if (lastRead) {
+      const pageInfo = typeof lastRead.pageIndex === 'number' && lastRead.pageIndex > 0 ? ` - Trang ${lastRead.pageIndex + 1}` : '';
+      resumeText = `Đọc tiếp (${safeLastReadTitle}${pageInfo})`;
+    }
     const safeStatus = escapeHtml(manga.status || 'Đang tiến hành');
     const safeRating = escapeHtml(String(manga.rating || '4.9'));
     const safeMangaId = escapeHtml(manga.id);
@@ -258,7 +279,7 @@ export class LibraryComponent {
 
           <div class="detail-actions">
             <button id="btn-start-reading" class="btn-primary">
-              <i class="fas fa-book-open"></i> ${lastRead ? 'Đọc tiếp (' + safeLastReadTitle + ')' : 'Đọc từ chương 1'}
+              <i class="fas fa-book-open"></i> ${resumeText}
             </button>
             <button id="btn-edit-manga-cover" class="btn-secondary" title="Thay đổi ảnh bìa hoặc sửa thông tin truyện">
               <i class="fas fa-image" style="color: #a855f7;"></i> Đổi Ảnh Bìa

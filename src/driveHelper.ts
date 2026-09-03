@@ -110,13 +110,25 @@ export const DriveHelper = {
   },
 
   /**
+   * Get optimized WebP direct image URL via global free edge CDN (wsrv.nl)
+   */
+  getWebpUrl(fileId?: string | null, width: number | null = null): string | null {
+    if (!fileId) return null;
+    const cleanId = this.extractFileId(fileId) || (/^[a-zA-Z0-9_-]{20,60}$/.test(fileId.trim()) ? fileId.trim() : null);
+    if (!cleanId) return null;
+    const encodedId = encodeURIComponent(cleanId);
+    const validWidth = (width && width > 0 && width <= 4000) ? Math.floor(width) : 1600;
+    return `https://wsrv.nl/?url=https%3A%2F%2Fdrive.google.com%2Fthumbnail%3Fid%3D${encodedId}%26sz%3Dw${validWidth}&output=webp&q=82`;
+  },
+
+  /**
    * Get direct displayable image URLs for a Google Drive File ID.
    * Returns primary Edge CDN proxy, Google Thumbnail link, Google UserContent CDN link, and alternative fallback links.
    */
   getImageUrls(fileId?: string | null, width: number | null = null): DriveImageUrls {
-    if (!fileId) return { edgeProxy: null, primary: '', fallback1: '', fallback2: '', fallback3: '' };
+    if (!fileId) return { edgeProxy: null, primary: '', fallback1: '', fallback2: '', fallback3: '', webpCdn: '' };
     const cleanId = this.extractFileId(fileId) || (/^[a-zA-Z0-9_-]{20,60}$/.test(fileId.trim()) ? fileId.trim() : null);
-    if (!cleanId) return { edgeProxy: null, primary: '', fallback1: '', fallback2: '', fallback3: '' };
+    if (!cleanId) return { edgeProxy: null, primary: '', fallback1: '', fallback2: '', fallback3: '', webpCdn: '' };
 
     const encodedId = encodeURIComponent(cleanId);
     const validWidth = (width && width > 0 && width <= 4000) ? Math.floor(width) : null;
@@ -126,13 +138,15 @@ export const DriveHelper = {
     // Edge CDN Proxy Endpoint (Tự động kích hoạt khi chạy trên Live Domain Cloudflare)
     const isLiveDomain = typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
     const proxyEndpoint = `/api/image-proxy?id=${encodedId}${validWidth ? '&w=' + validWidth : '&w=1600'}`;
+    const webpUrl = `https://wsrv.nl/?url=https%3A%2F%2Fdrive.google.com%2Fthumbnail%3Fid%3D${encodedId}%26sz%3Dw${validWidth || 1600}&output=webp&q=82`;
 
     return {
       edgeProxy: isLiveDomain ? proxyEndpoint : null,
       primary: `https://lh3.googleusercontent.com/d/${encodedId}${sizeParam}`,
       fallback1: `https://drive.google.com/thumbnail?id=${encodedId}${szParam}`,
       fallback2: `https://drive.google.com/uc?export=view&id=${encodedId}`,
-      fallback3: `https://drive.google.com/uc?export=download&id=${encodedId}`
+      fallback3: `https://drive.google.com/uc?export=download&id=${encodedId}`,
+      webpCdn: webpUrl
     };
   },
 
@@ -148,24 +162,25 @@ export const DriveHelper = {
     const cleanId = this.extractFileId(fileId) || (/^[a-zA-Z0-9_-]{20,60}$/.test(fileId.trim()) ? fileId.trim() : null);
     const encodedId = cleanId ? encodeURIComponent(cleanId) : '';
     const validWidth = (targetWidth && targetWidth > 0 && targetWidth <= 4000) ? Math.floor(targetWidth) : null;
+    const webpUrl = encodedId ? `https://wsrv.nl/?url=https%3A%2F%2Fdrive.google.com%2Fthumbnail%3Fid%3D${encodedId}%26sz%3Dw${validWidth || 1600}&output=webp&q=82` : null;
 
     // Danh sách nguồn tải theo thứ tự ưu tiên:
-    // 1. First-Party Cloudflare Edge Proxy (/api/image-proxy)
+    // 1. High-Performance Free Global WebP CDN (wsrv.nl - tự nén WebP, cache Edge toàn cầu, $0, gánh tải thay Drive)
     // 2. Google Direct UserContent CDN (lh3.googleusercontent.com/d/...)
-    // 3. Google Drive Thumbnail CDN (drive.google.com/thumbnail)
-    // 4. Google User Content alternative (lh3.google.com)
-    // 5. Google Drive direct export view (drive.google.com/uc?export=view)
-    // 6. Google Drive direct download (drive.google.com/uc?export=download)
-    // 7. Global Edge CDN Backup (wsrv.nl - dự phòng cuối cùng nếu toàn bộ hạ tầng trên bị nghẽn IP)
+    // 3. First-Party Cloudflare Edge Proxy (/api/image-proxy)
+    // 4. Google Drive Thumbnail CDN (drive.google.com/thumbnail)
+    // 5. Google User Content alternative (lh3.google.com)
+    // 6. Google Drive direct export view (drive.google.com/uc?export=view)
+    // 7. Google Drive direct download (drive.google.com/uc?export=download)
     const candidateSources = [
-      urls.edgeProxy,
+      webpUrl,
       urls.primary,
+      urls.edgeProxy,
       urls.fallback1,
       encodedId ? `https://lh3.google.com/u/0/d/${encodedId}` : null,
       urls.fallback2,
       urls.fallback3,
-      encodedId ? `https://docs.google.com/uc?export=download&id=${encodedId}` : null,
-      encodedId ? `https://wsrv.nl/?url=https%3A%2F%2Fdrive.google.com%2Fthumbnail%3Fid%3D${encodedId}%26sz%3Dw${validWidth || 1600}&output=webp` : null
+      encodedId ? `https://docs.google.com/uc?export=download&id=${encodedId}` : null
     ].filter((url): url is string => Boolean(url) && (url.startsWith('https://') || url.startsWith('/api/image-proxy')));
 
     if (candidateSources.length === 0) {

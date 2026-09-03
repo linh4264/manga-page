@@ -28,6 +28,22 @@ export class ReaderComponent {
   canvasCurlEngine: any = null;
   webtoonVirtualizer: WebtoonVirtualizer | null = null;
   unsubscribeComments?: () => void;
+  saveProgressTimer: any = null;
+
+  debounceSaveReadingProgress(): void {
+    if (!this.currentManga || !this.currentChapter) return;
+    if (this.saveProgressTimer) clearTimeout(this.saveProgressTimer);
+    this.saveProgressTimer = setTimeout(() => {
+      if (this.currentManga && this.currentChapter) {
+        this.state.saveReadingHistory(
+          this.currentManga.id,
+          this.currentChapter.id,
+          this.currentChapter.title,
+          this.currentPageIndex
+        );
+      }
+    }, 400);
+  }
 
   readerWrapper: HTMLElement | null = null;
   readerMainArea: HTMLElement | null = null;
@@ -289,7 +305,14 @@ export class ReaderComponent {
     if (!this.currentManga) return;
     const chapter = this.currentManga.chapters.find(c => c.id === chapterId) || this.currentManga.chapters[0];
     this.currentChapter = chapter;
-    this.currentPageIndex = 0;
+
+    // Tự động khôi phục chính xác trang đang đọc dở nếu có
+    const lastRead = this.state.getReadingHistory(this.currentManga.id);
+    let targetPage = 0;
+    if (lastRead && lastRead.chapterId === chapter.id && typeof lastRead.pageIndex === 'number' && lastRead.pageIndex > 0) {
+      targetPage = lastRead.pageIndex;
+    }
+    this.currentPageIndex = targetPage;
     
     if (this.sidebarChapterSubtitle) {
       this.sidebarChapterSubtitle.textContent = chapter.title;
@@ -299,6 +322,16 @@ export class ReaderComponent {
     }
 
     this.updateBookmarkButtonState();
+
+    const onPagesReady = () => {
+      this.updatePageSelect();
+      this.updateProgressUI();
+      if (targetPage > 0) {
+        setTimeout(() => {
+          this.scrollToPage(targetPage);
+        }, 150);
+      }
+    };
 
     // Nếu chương chưa tải danh sách ảnh (Lazy chapter data)
     if ((!chapter.pages || chapter.pages.length === 0) && !chapter.pdfUrl && !chapter.isPdf && SheetDatabase) {
@@ -315,19 +348,18 @@ export class ReaderComponent {
         if (this.currentChapter?.id === chapter.id) {
           chapter.pages = pages;
           this.renderPages();
-          this.updatePageSelect();
-          this.updateProgressUI();
+          onPagesReady();
         }
       });
     } else {
       this.renderPages();
-      this.updatePageSelect();
+      onPagesReady();
     }
 
     this.updateChapterNavButtons();
     
     // Lưu lịch sử đọc
-    this.state.saveReadingHistory(this.currentManga.id, chapter.id, chapter.title);
+    this.state.saveReadingHistory(this.currentManga.id, chapter.id, chapter.title, this.currentPageIndex);
 
     // Tải bình luận trực tuyến
     this.loadComments(chapter.id);
@@ -553,6 +585,7 @@ export class ReaderComponent {
       onPageVisible: (pageIdx) => {
         this.currentPageIndex = pageIdx;
         this.updateProgressUI();
+        this.debounceSaveReadingProgress();
       },
       onReachNearEnd: () => {
         this.preloadNextChapter();
@@ -671,6 +704,7 @@ export class ReaderComponent {
       onPageChange: (newPageIdx) => {
         this.currentPageIndex = newPageIdx;
         this.updateProgressUI();
+        this.debounceSaveReadingProgress();
       },
       onReachEnd: () => {
         this.nextChapter();
@@ -702,6 +736,7 @@ export class ReaderComponent {
         this.canvasCurlEngine.turnToPage(pageIdx);
       }
       this.updateProgressUI();
+      this.debounceSaveReadingProgress();
       return;
     }
 
@@ -709,6 +744,7 @@ export class ReaderComponent {
       this.currentPageIndex = pageIdx;
       this.webtoonVirtualizer.scrollToPage(pageIdx);
       this.updateProgressUI();
+      this.debounceSaveReadingProgress();
       return;
     }
 
@@ -723,6 +759,7 @@ export class ReaderComponent {
       }
       this.currentPageIndex = pageIdx;
       this.updateProgressUI();
+      this.debounceSaveReadingProgress();
     }
   }
 
@@ -869,6 +906,7 @@ export class ReaderComponent {
 
     if (this.currentPageIndex !== activeIdx) {
       this.currentPageIndex = activeIdx;
+      this.debounceSaveReadingProgress();
     }
     this.updateProgressUI();
   }

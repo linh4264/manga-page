@@ -52,16 +52,28 @@ self.addEventListener('fetch', (event) => {
   if (
     url.hostname.includes('googleusercontent.com') ||
     url.hostname.includes('drive.google.com') ||
+    url.hostname.includes('wsrv.nl') ||
+    url.pathname.includes('/api/image-proxy') ||
     url.pathname.endsWith('.jpg') ||
     url.pathname.endsWith('.jpeg') ||
     url.pathname.endsWith('.png') ||
-    url.pathname.endsWith('.webp')
+    url.pathname.endsWith('.webp') ||
+    url.pathname.endsWith('.avif')
   ) {
     event.respondWith(
       caches.open(OFFLINE_CHAPTERS_CACHE).then(async (chapterCache) => {
         const cachedResponse = await chapterCache.match(request);
         if (cachedResponse) {
           return cachedResponse;
+        }
+
+        // Check if query parameter has Google Drive file ID to match across proxy/CDN formats
+        const fileId = url.searchParams.get('id');
+        if (fileId) {
+          const matchedFallback = await chapterCache.match(`https://lh3.googleusercontent.com/d/${fileId}=w1600`);
+          if (matchedFallback) {
+            return matchedFallback;
+          }
         }
 
         // Try network, but don't fail hard if offline
