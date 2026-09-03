@@ -13,6 +13,7 @@ import { ImportModalComponent } from './components/importModal';
 import { AddChapterModalComponent } from './components/addChapterModal';
 import { EditChapterModalComponent } from './components/editChapterModal';
 import { EditMangaModalComponent } from './components/editMangaModal';
+import { PwaService } from './pwaService';
 
 export class MangaApp {
   customMangaList: Manga[];
@@ -146,6 +147,9 @@ export class MangaApp {
   }
 
   async init(): Promise<void> {
+    // Khởi tạo PWA & Service Worker
+    PwaService.init();
+
     // Initialize components
     this.readerComponent = new ReaderComponent(this);
 

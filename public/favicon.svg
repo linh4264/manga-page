@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#05070c"/>
+    </linearGradient>
+    <linearGradient id="primary-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#818cf8"/>
+      <stop offset="50%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#a855f7"/>
+    </linearGradient>
+    <linearGradient id="accent-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#818cf8"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Background rounded squircle -->
+  <rect width="512" height="512" rx="128" fill="url(#bg-gradient)"/>
+  <rect width="510" height="510" x="1" y="1" rx="127" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>
+
+  <!-- Drive Triangle stylized base -->
+  <g transform="translate(96, 96)" filter="url(#glow)">
+    <!-- Book pages + Cloud/Drive emblem -->
+    <path d="M160 32 L288 32 C296.8 32 304 39.2 304 48 L304 224 C304 232.8 296.8 240 288 240 L160 240 C151.2 240 144 232.8 144 224 L144 48 C144 39.2 151.2 32 160 32 Z" 
+          fill="url(#primary-grad)" opacity="0.9"/>
+    
+    <path d="M32 96 L160 96 C168.8 96 176 103.2 176 112 L176 288 C176 296.8 168.8 304 160 304 L32 304 C23.2 304 16 296.8 16 288 L16 112 C16 103.2 23.2 96 32 96 Z" 
+          fill="url(#accent-grad)" opacity="0.8"/>
+
+    <!-- Open book pages overlay -->
+    <path d="M160 80 C200 60 250 64 280 84 L280 236 C250 216 200 212 160 232 C120 212 70 216 40 236 L40 84 C70 64 120 60 160 80 Z" 
+          fill="none" stroke="#ffffff" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+    
+    <line x1="160" y1="80" x2="160" y2="232" stroke="#ffffff" stroke-width="16" stroke-linecap="round"/>
+  </g>
+</svg>

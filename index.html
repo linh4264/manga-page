@@ -47,6 +47,11 @@
     content="Trang web đọc truyện tranh online tốc độ cao từ Google Drive với chế độ Webtoon và giao diện Glassmorphism hiện đại.">
   <meta property="og:url" content="https://drive-manga.pages.dev">
 
+  <!-- Favicon & PWA Manifest -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/favicon.svg">
+  <link rel="manifest" href="/manifest.webmanifest">
+
   <!-- Stylesheet -->
   <link rel="stylesheet" href="styles/index.css">
 </head>
@@ -68,17 +73,16 @@
       </div>
 
       <div class="nav-controls">
+        <button class="btn-install-pwa hidden" id="btn-install-pwa" title="Cài đặt ứng dụng DriveManga lên thiết bị">
+          <i class="fas fa-download"></i> <span>Cài Đặt App</span>
+        </button>
         <button class="btn-secondary" id="btn-sync-live-data" title="Làm mới & Đồng bộ dữ liệu mới nhất từ Google Sheet">
           <i class="fas fa-rotate" id="icon-sync-data" style="color: #60a5fa;"></i> <span>Đồng bộ</span>
         </button>
         <a href="https://manga-translator-studio.pages.dev/" target="_blank" rel="noopener noreferrer"
           class="btn-header-app" title="App Dịch Truyện Manga Translator Studio">
-          <i class="fas fa-magic" style="color: #fb7185;"></i> <span>App Dịch Truyện</span>
+          <i class="fas fa-wand-magic-sparkles" style="color: #fb7185;"></i> <span>App Dịch Truyện</span>
         </a>
-        <button class="btn-secondary hidden" id="btn-open-config-sheet" style="display: none;"
-          title="Cấu hình Google Sheets Database">
-          <i class="fas fa-table" style="color: #34A853;"></i> <span>Kết nối Google Sheet</span>
-        </button>
         <button class="btn-primary" id="btn-open-import" title="Thêm Truyện Drive Mới">
           <i class="fas fa-plus"></i> <span>Thêm Truyện Drive</span>
         </button>
@@ -162,14 +166,6 @@
         <!-- Rendered Pages Here -->
       </main>
 
-    </div>
-
-    <!-- Mobile Floating Quick-Nav Pill -->
-    <div id="mobile-quick-nav" class="mobile-quick-nav">
-      <button id="btn-mobile-prev-chap" class="mobile-quick-nav-btn" title="Chương trước"><i class="fas fa-step-backward"></i></button>
-      <span id="mobile-quick-nav-page" class="mobile-quick-nav-page">1 / 1</span>
-      <button id="btn-mobile-next-chap" class="mobile-quick-nav-btn" title="Chương sau"><i class="fas fa-step-forward"></i></button>
-      <button id="btn-mobile-open-sidebar" class="mobile-quick-nav-btn" style="margin-left: 4px; color: #818cf8;" title="Mở menu & bình luận"><i class="fas fa-bars"></i></button>
     </div>
 
     <!-- Mobile Sidebar Backdrop Overlay -->

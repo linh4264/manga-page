@@ -1293,73 +1293,6 @@ body.is-webtoon-reading #detail-view {
   opacity: 1;
 }
 
-/* Mobile Quick Navigation Floating Bar (Glassmorphic Pill) */
-.mobile-quick-nav {
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%) translateY(0);
-  z-index: 1040;
-  display: none;
-  align-items: center;
-  gap: 8px;
-  background: rgba(15, 23, 42, 0.88);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 9999px;
-  padding: 6px 14px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
-}
-
-.reader-wrapper.is-scrolling-down .mobile-quick-nav {
-  transform: translateX(-50%) translateY(80px);
-  opacity: 0;
-  pointer-events: none;
-}
-
-.mobile-quick-nav-btn {
-  background: none;
-  border: none;
-  color: #cbd5e1;
-  font-size: 0.85rem;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.mobile-quick-nav-btn:active {
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
-  transform: scale(0.92);
-}
-
-.mobile-quick-nav-btn:disabled {
-  opacity: 0.3;
-  pointer-events: none;
-}
-
-.mobile-quick-nav-page {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #e2e8f0;
-  padding: 0 6px;
-  white-space: nowrap;
-  letter-spacing: 0.5px;
-}
-
-@media (max-width: 768px) {
-  .mobile-quick-nav {
-    display: flex;
-  }
-}
-
 /* Modal Popup Base */
 .modal-overlay {
   position: fixed;
@@ -1478,11 +1411,21 @@ body.is-webtoon-reading #detail-view {
   }
 
   .nav-controls {
-    gap: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
     flex-shrink: 0;
   }
 
-  .nav-controls .btn-primary {
+  .nav-controls .btn-primary span,
+  .nav-controls .btn-secondary span,
+  .nav-controls .btn-install-pwa span {
+    display: none !important;
+  }
+
+  .nav-controls .btn-primary,
+  .nav-controls .btn-secondary,
+  .nav-controls .btn-install-pwa {
     width: 36px;
     height: 36px;
     padding: 0;
@@ -1490,23 +1433,8 @@ body.is-webtoon-reading #detail-view {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.95rem;
-    box-shadow: 0 0 12px rgba(99, 102, 241, 0.4);
-  }
-
-  .nav-controls .btn-primary span {
-    display: none !important;
-  }
-
-  .nav-controls {
-    gap: 6px;
-  }
-
-  .nav-controls .btn-primary {
-    padding: 6px 12px;
-    font-size: 0.78rem;
-    height: 36px;
-    border-radius: var(--radius-full);
+    font-size: 0.9rem;
+    flex-shrink: 0;
   }
 
   /* Main View Container Padding on Mobile */
@@ -2656,6 +2584,183 @@ body.is-webtoon-reading #detail-view {
     padding: 10px;
   }
 }
+
+/* PWA App Toast Notifications */
+.app-toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+  max-width: 380px;
+}
+
+.app-toast-item {
+  pointer-events: auto;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #f8fafc;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  animation: toast-slide-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.25s ease;
+}
+
+.app-toast-item.toast-success {
+  border-color: rgba(52, 211, 153, 0.4);
+}
+
+.app-toast-item.toast-success .toast-content i {
+  color: #34d399;
+  margin-right: 6px;
+}
+
+.app-toast-item.toast-warning {
+  border-color: rgba(251, 191, 36, 0.4);
+}
+
+.app-toast-item.toast-warning .toast-content i {
+  color: #fbbf24;
+  margin-right: 6px;
+}
+
+.app-toast-item.toast-fadeout {
+  opacity: 0;
+  transform: translateY(12px) scale(0.95);
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+  transition: color 0.2s;
+}
+
+.toast-close:hover {
+  color: #fff;
+}
+
+@keyframes toast-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Header Install PWA Button */
+.btn-install-pwa {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.25) 0%, rgba(168, 85, 247, 0.25) 100%);
+  border: 1px solid rgba(168, 85, 247, 0.45);
+  color: #c084fc;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.btn-install-pwa:hover {
+  background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+  color: #fff;
+  border-color: transparent;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(168, 85, 247, 0.35);
+}
+
+/* Offline Chapter Actions & Badges */
+.chapter-offline-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-download-chapter {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm);
+  color: #94a3b8;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+
+.btn-download-chapter:hover {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: rgba(99, 102, 241, 0.4);
+  color: #818cf8;
+}
+
+.badge-downloaded {
+  font-size: 0.72rem;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  background: rgba(52, 211, 153, 0.15);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  color: #34d399;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-delete-offline {
+  background: none;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  padding: 2px 4px;
+  font-size: 0.75rem;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.btn-delete-offline:hover {
+  opacity: 1;
+}
+
+.download-progress-box {
+  width: 100px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.download-progress-bar {
+  height: 100%;
+  background: var(--accent-gradient);
+  width: 0%;
+  transition: width 0.15s ease;
+}
+
 
 
 

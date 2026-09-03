@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Host & Sitemap definition for search engines
+Sitemap: https://drive-manga.pages.dev/sitemap.xml

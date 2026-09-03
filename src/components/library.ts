@@ -7,6 +7,9 @@ import { DriveHelper } from '../driveHelper';
 import { FirebaseService } from '../firebaseService';
 import { StorageService } from '../storageService';
 import { escapeHtml, sanitizeUrl } from '../utils/security';
+import { OfflineService } from '../offlineService';
+import { PwaService } from '../pwaService';
+import { SheetDatabase } from '../sheetDatabase';
 
 export class LibraryComponent {
   state: any;
@@ -282,17 +285,34 @@ export class LibraryComponent {
           </div>
         </div>
         <div class="chapter-grid">
-          ${displayChapters.map(ch => `
-            <div class="chapter-item" data-chapter-id="${escapeHtml(ch.id)}" style="display: flex; align-items: center; justify-content: space-between;">
-              <div class="chapter-info-click" style="flex: 1; display: flex; justify-content: space-between; align-items: center; margin-right: 12px; cursor: pointer;">
+          ${displayChapters.map(ch => {
+            const isDownloaded = OfflineService.isChapterDownloaded(manga.id, ch.id);
+            return `
+            <div class="chapter-item" data-chapter-id="${escapeHtml(ch.id)}" style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+              <div class="chapter-info-click" style="flex: 1; display: flex; justify-content: space-between; align-items: center; margin-right: 8px; cursor: pointer;">
                 <span class="chapter-title-text">${escapeHtml(ch.title)}</span>
                 <span class="chapter-date"><i class="far fa-clock"></i> ${escapeHtml(ch.updatedAt || 'Hôm nay')}</span>
               </div>
-              <button class="btn-edit-chapter btn-secondary" data-chapter-id="${escapeHtml(ch.id)}" style="padding: 4px 10px; font-size: 0.75rem; border-radius: var(--radius-sm);" title="Chỉnh sửa nội dung chương">
-                <i class="fas fa-edit" style="color: #818cf8;"></i> Sửa Chương
-              </button>
+              <div class="chapter-actions-right" style="display: flex; align-items: center; gap: 6px;">
+                <div class="chapter-offline-actions" id="offline-action-${escapeHtml(ch.id)}">
+                  ${isDownloaded ? `
+                    <span class="badge-downloaded" title="Chương đã tải offline"><i class="fas fa-check-circle"></i> Đã tải</span>
+                    <button class="btn-delete-offline" data-chapter-id="${escapeHtml(ch.id)}" title="Xóa dữ liệu offline của chương này">
+                      <i class="fas fa-trash-alt"></i>
+                    </button>
+                  ` : `
+                    <button class="btn-download-chapter" data-chapter-id="${escapeHtml(ch.id)}" title="Tải chương về để đọc ngoại tuyến">
+                      <i class="fas fa-cloud-arrow-down"></i> Tải
+                    </button>
+                  `}
+                </div>
+                <button class="btn-edit-chapter btn-secondary" data-chapter-id="${escapeHtml(ch.id)}" style="padding: 4px 8px; font-size: 0.75rem; border-radius: var(--radius-sm);" title="Chỉnh sửa nội dung chương">
+                  <i class="fas fa-edit" style="color: #818cf8;"></i> Sửa
+                </button>
+              </div>
             </div>
-          `).join('')}
+            `;
+          }).join('')}
         </div>
       </div>
     `;
@@ -344,7 +364,7 @@ export class LibraryComponent {
       this.showDetailView(manga, false); // Refresh view
     });
 
-    // Chapter item click handlers (read chapter or edit chapter link)
+    // Chapter item click handlers (read chapter, download offline, or edit chapter link)
     this.detailContainer.querySelectorAll('.chapter-item').forEach(item => {
       const chEl = item as HTMLElement;
       const chId = chEl.dataset.chapterId;
@@ -358,6 +378,57 @@ export class LibraryComponent {
         e.stopPropagation();
         if (chapterObj) this.state.openEditChapterModal(manga, chapterObj);
       });
+
+      // Nút tải offline
+      const btnDownload = chEl.querySelector('.btn-download-chapter');
+      if (btnDownload && chapterObj) {
+        btnDownload.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const actionBox = chEl.querySelector(`#offline-action-${chId}`);
+          if (!actionBox) return;
+
+          actionBox.innerHTML = `
+            <div class="download-progress-box" title="Đang tải chương...">
+              <div class="download-progress-bar" id="pbar-${chId}" style="width: 5%;"></div>
+            </div>
+          `;
+
+          try {
+            // Nạp danh sách ảnh nếu chương đang ở dạng lazy
+            if (!chapterObj.pages || chapterObj.pages.length === 0) {
+              if (SheetDatabase) {
+                const fetched = await SheetDatabase.fetchChapterPages(manga.id, chapterObj.id);
+                chapterObj.pages = fetched;
+              }
+            }
+
+            const pBar = actionBox.querySelector(`#pbar-${chId}`) as HTMLElement | null;
+            await OfflineService.downloadChapter(manga, chapterObj, (pct) => {
+              if (pBar) pBar.style.width = `${pct}%`;
+            });
+
+            PwaService.showToast(`Đã tải thành công ${chapterObj.title} về máy để đọc ngoại tuyến!`, 'success');
+            this.showDetailView(manga, false);
+          } catch (err: any) {
+            console.warn('Lỗi tải offline:', err);
+            PwaService.showToast(err?.message || 'Không thể tải chương về máy!', 'warning');
+            this.showDetailView(manga, false);
+          }
+        });
+      }
+
+      // Nút xóa dữ liệu offline của chương
+      const btnDeleteOffline = chEl.querySelector('.btn-delete-offline');
+      if (btnDeleteOffline && chapterObj) {
+        btnDeleteOffline.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (confirm(`Bạn có chắc muốn xóa dữ liệu tải về của "${chapterObj.title}"?`)) {
+            await OfflineService.deleteDownloadedChapter(manga.id, chId!);
+            PwaService.showToast(`Đã xóa dữ liệu ngoại tuyến của ${chapterObj.title}!`, 'info');
+            this.showDetailView(manga, false);
+          }
+        });
+      }
     });
   }
 

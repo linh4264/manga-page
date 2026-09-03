@@ -40,12 +40,6 @@ export class ReaderComponent {
   readerPageSelect: HTMLSelectElement | null = null;
   progressBar: HTMLElement | null = null;
 
-  mobileQuickNav: HTMLElement | null = null;
-  mobileQuickNavPage: HTMLElement | null = null;
-  btnMobilePrevChap: HTMLButtonElement | null = null;
-  btnMobileNextChap: HTMLButtonElement | null = null;
-  btnMobileOpenSidebar: HTMLButtonElement | null = null;
-
   constructor(appState: any) {
     this.state = appState;
     this.readingMode = (localStorage.getItem('drive_manga_reading_mode') as any) || 'webtoon';
@@ -65,31 +59,6 @@ export class ReaderComponent {
     this.readerChapterSelect = document.getElementById('reader-chapter-select') as HTMLSelectElement | null;
     this.readerPageSelect = document.getElementById('reader-page-select') as HTMLSelectElement | null;
     this.progressBar = document.getElementById('reader-progress-bar');
-
-    this.mobileQuickNav = document.getElementById('mobile-quick-nav');
-    this.mobileQuickNavPage = document.getElementById('mobile-quick-nav-page');
-    this.btnMobilePrevChap = document.getElementById('btn-mobile-prev-chap') as HTMLButtonElement | null;
-    this.btnMobileNextChap = document.getElementById('btn-mobile-next-chap') as HTMLButtonElement | null;
-    this.btnMobileOpenSidebar = document.getElementById('btn-mobile-open-sidebar') as HTMLButtonElement | null;
-
-    if (this.btnMobilePrevChap) {
-      this.btnMobilePrevChap.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.prevChapter();
-      });
-    }
-    if (this.btnMobileNextChap) {
-      this.btnMobileNextChap.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.nextChapter();
-      });
-    }
-    if (this.btnMobileOpenSidebar) {
-      this.btnMobileOpenSidebar.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.toggleSidebar(false);
-      });
-    }
     
     // Bind Mobile Backdrop & Main Area outside click to close Sidebar
     const handleOutsideClick = () => {
@@ -857,18 +826,6 @@ export class ReaderComponent {
     }
     if (this.readerPageSelect) {
       this.readerPageSelect.value = String(this.currentPageIndex);
-    }
-
-    // Cập nhật thanh điều hướng nổi di động (Mobile Quick Nav)
-    if (this.mobileQuickNavPage) {
-      this.mobileQuickNavPage.textContent = `${this.currentPageIndex + 1} / ${totalPages}`;
-    }
-    const currentIdx = (this.currentManga?.chapters || []).findIndex(c => c.id === this.currentChapter?.id);
-    if (this.btnMobilePrevChap) {
-      this.btnMobilePrevChap.disabled = currentIdx <= 0;
-    }
-    if (this.btnMobileNextChap) {
-      this.btnMobileNextChap.disabled = currentIdx === -1 || currentIdx >= (this.currentManga?.chapters || []).length - 1;
     }
   }
 

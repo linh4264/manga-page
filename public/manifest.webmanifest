@@ -1,0 +1,29 @@
+{
+  "name": "DriveManga - Đọc Truyện Tranh Online",
+  "short_name": "DriveManga",
+  "description": "Trình đọc truyện tranh Manga & Webtoon miễn phí tốc độ cao, hỗ trợ đọc offline từ Google Drive.",
+  "start_url": "/#/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#05070c",
+  "theme_color": "#05070c",
+  "lang": "vi-VN",
+  "dir": "ltr",
+  "categories": ["books", "entertainment"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Thư Viện Truyện",
+      "url": "/#/",
+      "icons": [{ "src": "/favicon.svg", "sizes": "96x96" }]
+    }
+  ]
+}
