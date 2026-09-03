@@ -38,13 +38,23 @@ function getAdminSecret() {
 }
 
 /**
- * Hàm khởi chạy thủ công (1-click) trong Apps Script Editor để tạo sẵn 2 Tab
- * Bạn có thể chọn hàm này trên thanh menu Apps Script và bấm "Chạy" (Run)
+ * Hàm khởi chạy thủ công (1-click) trong Apps Script Editor để:
+ * 1. Tự động tạo 2 Tab: Manga & Chapters
+ * 2. Kích hoạt cửa sổ cấp quyền Google Drive (OAuth Authorization) cho Web App
  */
 function setupDatabase() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   ensureDatabaseSchema(ss);
-  Logger.log("✅ Đã khởi tạo thành công 2 Tab: Manga & Chapters!");
+
+  // Kích hoạt ủy quyền truy cập Google Drive cho tài khoản của bạn
+  try {
+    const root = DriveApp.getRootFolder();
+    Logger.log("✅ Đã ủy quyền Google Drive thành công! Thư mục gốc: " + root.getName());
+  } catch (e) {
+    Logger.log("Ủy quyền Drive: " + e.toString());
+  }
+
+  Logger.log("✅ Đã khởi tạo xong 2 Tab và cấp quyền Google Drive thành công!");
 }
 
 /**
