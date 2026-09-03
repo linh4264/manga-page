@@ -166,6 +166,40 @@ export class CanvasCurlEngine {
     this.ctx.drawImage(img, dx, dy, dw, dh);
   }
 
+  private drawSpread(leftImg: HTMLImageElement | null, rightImg: HTMLImageElement | null, w: number, h: number): void {
+    if (!this.ctx) return;
+    const halfW = w / 2;
+
+    this.ctx.fillStyle = '#05070c';
+    this.ctx.fillRect(0, 0, w, h);
+
+    // Left page: 0 -> halfW
+    if (leftImg) {
+      this.drawImageFit(leftImg, 0, 0, halfW, h);
+    } else {
+      this.ctx.fillStyle = '#0b0f19';
+      this.ctx.fillRect(0, 0, halfW, h);
+    }
+
+    // Right page: halfW -> w
+    this.drawImageFit(rightImg, halfW, 0, halfW, h);
+
+    // Center spine crease
+    this.drawSpineShadow(halfW, h);
+  }
+
+  private drawSpineShadow(halfW: number, h: number): void {
+    if (!this.ctx) return;
+    const spineShadow = this.ctx.createLinearGradient(halfW - 24, 0, halfW + 24, 0);
+    spineShadow.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    spineShadow.addColorStop(0.42, 'rgba(0, 0, 0, 0.45)');
+    spineShadow.addColorStop(0.5, 'rgba(0, 0, 0, 0.7)');
+    spineShadow.addColorStop(0.58, 'rgba(0, 0, 0, 0.45)');
+    spineShadow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    this.ctx.fillStyle = spineShadow;
+    this.ctx.fillRect(halfW - 24, 0, 48, h);
+  }
+
   public draw(): void {
     if (!this.ctx || this.isDestroyed) return;
     const w = parseFloat(this.canvas.style.width) || this.canvas.width;
@@ -174,23 +208,27 @@ export class CanvasCurlEngine {
 
     this.ctx.clearRect(0, 0, w, h);
 
-    // Chế độ 2 Trang: Sử dụng bộ vẽ lật sách Manga 3D chuyên biệt
-    if (isDouble) {
-      this.drawDualPage(w, h);
-      return;
-    }
+    // Helper: vẽ một trang đơn hoặc một spread 2 trang hoàn chỉnh
+    const renderLayer = (pageIdx: number) => {
+      if (isDouble) {
+        const rightImg = this.loadImage(pageIdx);
+        const leftImg = pageIdx + 1 < this.pages.length ? this.loadImage(pageIdx + 1) : null;
+        this.drawSpread(leftImg, rightImg, w, h);
+      } else {
+        const img = this.loadImage(pageIdx);
+        this.drawImageFit(img, 0, 0, w, h);
+      }
+    };
 
-    const currentImg = this.loadImage(this.state.currentPage);
-
+    // Khi không lật trang (Trạng thái tĩnh)
     if (this.state.progress <= 0.001 || (!this.state.isDragging && !this.state.isAnimating)) {
-      this.drawImageFit(currentImg, 0, 0, w, h);
+      renderLayer(this.state.currentPage);
       return;
     }
 
     this.ctx.fillStyle = '#05070c';
     this.ctx.fillRect(0, 0, w, h);
 
-    const targetImg = this.state.targetPage >= 0 ? this.loadImage(this.state.targetPage) : null;
     const cornerX = this.state.corner.x;
     const cornerY = this.state.corner.y;
     const fingerX = this.state.finger.x;
@@ -215,8 +253,8 @@ export class CanvasCurlEngine {
     const p2X = midX + cosFold * extend;
     const p2Y = midY + sinFold * extend;
 
-    // 1. VẼ TRANG KẾ TIẾP (Underneath)
-    if (targetImg) {
+    // 1. VẼ TRANG KẾ TIẾP (Underneath - bên dưới vết lật)
+    if (this.state.targetPage >= 0) {
       this.ctx.save();
       this.ctx.beginPath();
       this.ctx.moveTo(p1X, p1Y);
@@ -226,7 +264,7 @@ export class CanvasCurlEngine {
       this.ctx.closePath();
       this.ctx.clip();
 
-      this.drawImageFit(targetImg, 0, 0, w, h);
+      renderLayer(this.state.targetPage);
 
       const underShadow = this.ctx.createLinearGradient(midX, midY, midX - cosN * 45, midY - sinN * 45);
       underShadow.addColorStop(0, 'rgba(0, 0, 0, 0.7)');
@@ -238,7 +276,7 @@ export class CanvasCurlEngine {
       this.ctx.restore();
     }
 
-    // 2. VẼ TRANG HIỆN TẠI (Current page)
+    // 2. VẼ TRANG HIỆN TẠI (Current page / spread)
     this.ctx.save();
     this.ctx.beginPath();
     this.ctx.moveTo(p1X, p1Y);
@@ -248,7 +286,7 @@ export class CanvasCurlEngine {
     this.ctx.closePath();
     this.ctx.clip();
 
-    this.drawImageFit(currentImg, 0, 0, w, h);
+    renderLayer(this.state.currentPage);
     this.ctx.restore();
 
     // 3. VẼ VẠT GIẤY BẺ CONG LẬT NGƯỢC (Curled Page Flap)
@@ -275,7 +313,7 @@ export class CanvasCurlEngine {
     this.ctx.fillRect(0, 0, w, h);
 
     this.ctx.globalAlpha = 0.22;
-    this.drawImageFit(currentImg, 0, 0, w, h);
+    renderLayer(this.state.currentPage);
     this.ctx.globalAlpha = 1.0;
 
     const curlGrad = this.ctx.createLinearGradient(midX, midY, midX + cosN * 60, midY + sinN * 60);
@@ -287,197 +325,6 @@ export class CanvasCurlEngine {
     this.ctx.fillRect(0, 0, w, h);
 
     this.ctx.restore();
-  }
-
-  /**
-   * Bộ vẽ Manga 2 Trang 3D: Lật tờ giấy qua gáy sách theo đúng chuẩn Manga Nhật Bản (RTL)
-   */
-  private drawDualPage(w: number, h: number): void {
-    if (!this.ctx) return;
-    const halfW = w / 2;
-    const curP = this.state.currentPage;
-    const tarP = this.state.targetPage;
-    const isFlipping = (this.state.isDragging || this.state.isAnimating) && this.state.progress > 0.001;
-
-    // Nền tối chuẩn Studio
-    this.ctx.fillStyle = '#05070c';
-    this.ctx.fillRect(0, 0, w, h);
-
-    if (!isFlipping || tarP < 0 || tarP === curP) {
-      // 1. TRẠNG THÁI TĨNH: Vẽ 2 trang mở phẳng trên bàn
-      const leftImg = curP + 1 < this.pages.length ? this.loadImage(curP + 1) : null;
-      const rightImg = this.loadImage(curP);
-
-      this.drawImageFit(leftImg, 0, 0, halfW, h);
-      this.drawImageFit(rightImg, halfW, 0, halfW, h);
-      this.drawSpineShadow(halfW, h);
-      return;
-    }
-
-    // 2. TRẠNG THÁI ĐANG LẬT TRANG (Duyệt theo tiến độ progress 0 -> 1)
-    const progress = Math.max(0.001, Math.min(0.999, this.state.progress));
-
-    if (tarP > curP) {
-      // LẬT TIẾP (Next - Manga RTL: Lật tờ giấy bên phải qua bên trái)
-      // Nền bên trái: Trang tĩnh hiện tại (curP + 1)
-      const staticLeftImg = curP + 1 < this.pages.length ? this.loadImage(curP + 1) : null;
-      this.drawImageFit(staticLeftImg, 0, 0, halfW, h);
-
-      // Nền bên phải: Trang mới bên dưới sẽ lộ ra (tarP)
-      const newRightImg = this.loadImage(tarP);
-      this.drawImageFit(newRightImg, halfW, 0, halfW, h);
-
-      // Tờ giấy lật (Leaf): Lật từ mép phải (w) qua gáy (halfW) sang trái (0)
-      if (progress <= 0.5) {
-        // Nửa đầu: Tờ giấy bên phải co lại về phía gáy sách
-        const t = progress * 2; // 0 -> 1
-        const leafWidth = Math.max(1, halfW * (1 - t));
-
-        this.ctx.save();
-        this.ctx.beginPath();
-        this.ctx.rect(halfW, 0, leafWidth, h);
-        this.ctx.clip();
-
-        const frontImg = this.loadImage(curP);
-        this.drawImageFit(frontImg, halfW, 0, halfW, h);
-
-        // Ánh sáng uốn cong hình trụ của trang giấy
-        const curlGrad = this.ctx.createLinearGradient(halfW, 0, halfW + leafWidth, 0);
-        curlGrad.addColorStop(0, 'rgba(0, 0, 0, 0.45)');
-        curlGrad.addColorStop(0.25, 'rgba(0, 0, 0, 0.05)');
-        curlGrad.addColorStop(0.85, 'rgba(255, 255, 255, 0.22)');
-        curlGrad.addColorStop(1, 'rgba(0, 0, 0, 0.4)');
-        this.ctx.fillStyle = curlGrad;
-        this.ctx.fillRect(halfW, 0, leafWidth, h);
-        this.ctx.restore();
-
-        // Đổ bóng của mép giấy rơi xuống trang mới bên phải
-        const shadowW = Math.min(50, leafWidth * 0.7);
-        const shadowGrad = this.ctx.createLinearGradient(halfW + leafWidth, 0, halfW + leafWidth + shadowW, 0);
-        shadowGrad.addColorStop(0, 'rgba(0, 0, 0, 0.5)');
-        shadowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        this.ctx.fillStyle = shadowGrad;
-        this.ctx.fillRect(halfW + leafWidth, 0, shadowW, h);
-
-      } else {
-        // Nửa sau: Tờ giấy vượt qua gáy sách và mở rộng dần sang bên trái
-        const t = (progress - 0.5) * 2; // 0 -> 1
-        const leafWidth = Math.max(1, halfW * t);
-        const leafLeft = halfW - leafWidth;
-
-        this.ctx.save();
-        this.ctx.beginPath();
-        this.ctx.rect(leafLeft, 0, leafWidth, h);
-        this.ctx.clip();
-
-        // Mặt sau của tờ giấy (hiển thị trang mới bên trái: tarP + 1)
-        const backImg = tarP + 1 < this.pages.length ? this.loadImage(tarP + 1) : null;
-        if (backImg) {
-          this.drawImageFit(backImg, 0, 0, halfW, h);
-        } else {
-          this.ctx.fillStyle = '#0f172a';
-          this.ctx.fillRect(leafLeft, 0, leafWidth, h);
-        }
-
-        // Ánh sáng uốn cong khi tờ giấy tiếp đất bên trái
-        const curlGrad = this.ctx.createLinearGradient(leafLeft, 0, halfW, 0);
-        curlGrad.addColorStop(0, 'rgba(0, 0, 0, 0.35)');
-        curlGrad.addColorStop(0.2, 'rgba(255, 255, 255, 0.22)');
-        curlGrad.addColorStop(0.85, 'rgba(0, 0, 0, 0.05)');
-        curlGrad.addColorStop(1, 'rgba(0, 0, 0, 0.45)');
-        this.ctx.fillStyle = curlGrad;
-        this.ctx.fillRect(leafLeft, 0, leafWidth, h);
-        this.ctx.restore();
-
-        // Đổ bóng của mép giấy rơi xuống trang cũ bên trái
-        const shadowW = Math.min(50, leafWidth * 0.7);
-        const shadowGrad = this.ctx.createLinearGradient(leafLeft, 0, leafLeft - shadowW, 0);
-        shadowGrad.addColorStop(0, 'rgba(0, 0, 0, 0.5)');
-        shadowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        this.ctx.fillStyle = shadowGrad;
-        this.ctx.fillRect(leafLeft - shadowW, 0, shadowW, h);
-      }
-
-    } else {
-      // LẬT LÙI (Prev - Manga RTL: Lật tờ giấy bên trái qua bên phải)
-      const staticRightImg = this.loadImage(curP);
-      this.drawImageFit(staticRightImg, halfW, 0, halfW, h);
-
-      const newLeftImg = tarP + 1 < this.pages.length ? this.loadImage(tarP + 1) : null;
-      this.drawImageFit(newLeftImg, 0, 0, halfW, h);
-
-      if (progress <= 0.5) {
-        const t = progress * 2;
-        const leafWidth = Math.max(1, halfW * (1 - t));
-        const leafLeft = halfW - leafWidth;
-
-        this.ctx.save();
-        this.ctx.beginPath();
-        this.ctx.rect(leafLeft, 0, leafWidth, h);
-        this.ctx.clip();
-
-        const frontImg = curP + 1 < this.pages.length ? this.loadImage(curP + 1) : null;
-        this.drawImageFit(frontImg, 0, 0, halfW, h);
-
-        const curlGrad = this.ctx.createLinearGradient(leafLeft, 0, halfW, 0);
-        curlGrad.addColorStop(0, 'rgba(0, 0, 0, 0.35)');
-        curlGrad.addColorStop(0.8, 'rgba(0, 0, 0, 0.05)');
-        curlGrad.addColorStop(1, 'rgba(0, 0, 0, 0.45)');
-        this.ctx.fillStyle = curlGrad;
-        this.ctx.fillRect(leafLeft, 0, leafWidth, h);
-        this.ctx.restore();
-
-        const shadowW = Math.min(50, leafWidth * 0.7);
-        const shadowGrad = this.ctx.createLinearGradient(leafLeft, 0, leafLeft - shadowW, 0);
-        shadowGrad.addColorStop(0, 'rgba(0, 0, 0, 0.5)');
-        shadowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        this.ctx.fillStyle = shadowGrad;
-        this.ctx.fillRect(leafLeft - shadowW, 0, shadowW, h);
-
-      } else {
-        const t = (progress - 0.5) * 2;
-        const leafWidth = Math.max(1, halfW * t);
-
-        this.ctx.save();
-        this.ctx.beginPath();
-        this.ctx.rect(halfW, 0, leafWidth, h);
-        this.ctx.clip();
-
-        const backImg = this.loadImage(tarP);
-        this.drawImageFit(backImg, halfW, 0, halfW, h);
-
-        const curlGrad = this.ctx.createLinearGradient(halfW, 0, halfW + leafWidth, 0);
-        curlGrad.addColorStop(0, 'rgba(0, 0, 0, 0.45)');
-        curlGrad.addColorStop(0.2, 'rgba(255, 255, 255, 0.22)');
-        curlGrad.addColorStop(0.85, 'rgba(0, 0, 0, 0.05)');
-        curlGrad.addColorStop(1, 'rgba(0, 0, 0, 0.35)');
-        this.ctx.fillStyle = curlGrad;
-        this.ctx.fillRect(halfW, 0, leafWidth, h);
-        this.ctx.restore();
-
-        const shadowW = Math.min(50, leafWidth * 0.7);
-        const shadowGrad = this.ctx.createLinearGradient(halfW + leafWidth, 0, halfW + leafWidth + shadowW, 0);
-        shadowGrad.addColorStop(0, 'rgba(0, 0, 0, 0.5)');
-        shadowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        this.ctx.fillStyle = shadowGrad;
-        this.ctx.fillRect(halfW + leafWidth, 0, shadowW, h);
-      }
-    }
-
-    // Đổ bóng rãnh gáy sách 3D ở chính giữa
-    this.drawSpineShadow(halfW, h);
-  }
-
-  private drawSpineShadow(halfW: number, h: number): void {
-    if (!this.ctx) return;
-    const spineShadow = this.ctx.createLinearGradient(halfW - 24, 0, halfW + 24, 0);
-    spineShadow.addColorStop(0, 'rgba(0, 0, 0, 0)');
-    spineShadow.addColorStop(0.42, 'rgba(0, 0, 0, 0.45)');
-    spineShadow.addColorStop(0.5, 'rgba(0, 0, 0, 0.7)');
-    spineShadow.addColorStop(0.58, 'rgba(0, 0, 0, 0.45)');
-    spineShadow.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    this.ctx.fillStyle = spineShadow;
-    this.ctx.fillRect(halfW - 24, 0, 48, h);
   }
 
   public resizeCanvas(): void {
@@ -503,30 +350,6 @@ export class CanvasCurlEngine {
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     this.requestDraw();
-  }
-
-  private animateProgress(from: number, to: number, duration: number, onComplete?: () => void): void {
-    this.state.isAnimating = true;
-    const startTime = performance.now();
-
-    const step = (now: number) => {
-      const elapsed = now - startTime;
-      const t = Math.min(1, elapsed / duration);
-      // Cubic easing siêu mượt
-      const ease = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-
-      this.state.progress = from + (to - from) * ease;
-      this.draw();
-
-      if (t < 1) {
-        this.state.animFrame = requestAnimationFrame(step);
-      } else {
-        this.state.isAnimating = false;
-        if (onComplete) onComplete();
-      }
-    };
-    if (this.state.animFrame) cancelAnimationFrame(this.state.animFrame);
-    this.state.animFrame = requestAnimationFrame(step);
   }
 
   private animateTo(endX: number, endY: number, onComplete?: () => void): void {
@@ -586,38 +409,21 @@ export class CanvasCurlEngine {
     const isDouble = this.isDualPage && w >= 700;
     const step = isDouble ? 2 : 1;
 
-    if (!this.state.isDragging && dist > 6) {
-      if (isDouble) {
-        // Trong Manga RTL: Kéo từ nửa phải sang trái = Lật tiếp (Next); Kéo từ nửa trái sang phải = Lật lùi (Prev)
-        if (this.startPt.x > w * 0.5) {
-          if (this.state.currentPage >= this.pages.length - 1) {
-            if (this.onReachEnd) this.onReachEnd();
-            return;
-          }
-          this.state.targetPage = Math.min(this.pages.length - 1, this.state.currentPage + step);
-        } else {
-          if (this.state.currentPage <= 0) {
-            if (this.onReachStart) this.onReachStart();
-            return;
-          }
-          this.state.targetPage = Math.max(0, this.state.currentPage - step);
+    if (!this.state.isDragging && dist > 5) {
+      if (this.startPt.x < w * 0.5) {
+        if (this.state.currentPage >= this.pages.length - 1) {
+          if (this.onReachEnd) this.onReachEnd();
+          return;
         }
+        this.state.targetPage = Math.min(this.pages.length - 1, this.state.currentPage + step);
+        this.state.corner = { x: 0, y: this.startPt.y < h * 0.5 ? 0 : h };
       } else {
-        if (this.startPt.x < w * 0.5) {
-          if (this.state.currentPage >= this.pages.length - 1) {
-            if (this.onReachEnd) this.onReachEnd();
-            return;
-          }
-          this.state.targetPage = Math.min(this.pages.length - 1, this.state.currentPage + step);
-          this.state.corner = { x: 0, y: this.startPt.y < h * 0.5 ? 0 : h };
-        } else {
-          if (this.state.currentPage <= 0) {
-            if (this.onReachStart) this.onReachStart();
-            return;
-          }
-          this.state.targetPage = Math.max(0, this.state.currentPage - step);
-          this.state.corner = { x: w, y: this.startPt.y < h * 0.5 ? 0 : h };
+        if (this.state.currentPage <= 0) {
+          if (this.onReachStart) this.onReachStart();
+          return;
         }
+        this.state.targetPage = Math.max(0, this.state.currentPage - step);
+        this.state.corner = { x: w, y: this.startPt.y < h * 0.5 ? 0 : h };
       }
       this.state.isDragging = true;
       this.viewport.classList.add('is-dragging');
@@ -626,19 +432,7 @@ export class CanvasCurlEngine {
     if (this.state.isDragging) {
       if (e.cancelable) e.preventDefault();
       this.state.finger = { ...pt };
-
-      if (isDouble) {
-        const halfW = w / 2;
-        if (this.state.targetPage > this.state.currentPage) {
-          const dragged = Math.max(0, this.startPt.x - pt.x);
-          this.state.progress = Math.min(1, Math.max(0.01, dragged / (halfW * 0.95)));
-        } else {
-          const dragged = Math.max(0, pt.x - this.startPt.x);
-          this.state.progress = Math.min(1, Math.max(0.01, dragged / (halfW * 0.95)));
-        }
-      } else {
-        this.state.progress = Math.min(1, Math.max(0.01, Math.abs(this.state.finger.x - this.state.corner.x) / (w * 0.95)));
-      }
+      this.state.progress = Math.min(1, Math.max(0.01, Math.abs(this.state.finger.x - this.state.corner.x) / (w * 0.95)));
       this.requestDraw();
     }
   }
@@ -648,7 +442,6 @@ export class CanvasCurlEngine {
     this.isTouchActive = false;
     this.viewport.classList.remove('is-dragging');
     const w = parseFloat(this.canvas.style.width) || this.canvas.width;
-    const isDouble = this.isDualPage && w >= 700;
 
     if (!this.state.isDragging) {
       this.state.progress = 0;
@@ -658,33 +451,8 @@ export class CanvasCurlEngine {
     }
 
     this.state.isDragging = false;
-    const elapsed = performance.now() - this.startTime;
-
-    if (isDouble) {
-      const dist = Math.abs(this.state.finger.x - this.startPt.x);
-      const velocity = dist / (elapsed || 1);
-      const shouldFlip = this.state.progress > 0.22 || (velocity > 0.3 && this.state.progress > 0.06);
-
-      if (shouldFlip) {
-        this.animateProgress(this.state.progress, 1, 240, () => {
-          this.state.currentPage = this.state.targetPage;
-          this.state.progress = 0;
-          this.state.targetPage = -1;
-          this.preload(this.state.currentPage);
-          this.requestDraw();
-          if (this.onPageChange) this.onPageChange(this.state.currentPage);
-        });
-      } else {
-        this.animateProgress(this.state.progress, 0, 180, () => {
-          this.state.progress = 0;
-          this.state.targetPage = -1;
-          this.requestDraw();
-        });
-      }
-      return;
-    }
-
     const dist = Math.abs(this.state.finger.x - this.state.corner.x);
+    const elapsed = performance.now() - this.startTime;
     const velocity = dist / (elapsed || 1);
     const shouldFlip = dist > w * 0.26 || (velocity > 0.35 && dist > 20);
 
@@ -727,20 +495,7 @@ export class CanvasCurlEngine {
     }
 
     const clampedTarget = Math.max(0, Math.min(this.pages.length - 1, targetIndex));
-
-    if (isDouble) {
-      this.state.progress = 0.01;
-      this.animateProgress(0, 1, 320, () => {
-        this.state.currentPage = clampedTarget;
-        this.state.progress = 0;
-        this.state.targetPage = -1;
-        this.preload(this.state.currentPage);
-        this.requestDraw();
-        if (this.onPageChange) this.onPageChange(this.state.currentPage);
-      });
-      return;
-    }
-
+    this.state.targetPage = clampedTarget;
     this.state.corner = direction > 0 ? { x: 0, y: h } : { x: w, y: h };
     this.state.finger = { ...this.state.corner };
     this.state.progress = 0.05;
