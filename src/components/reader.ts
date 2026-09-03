@@ -8,6 +8,7 @@ import { DriveHelper } from '../driveHelper';
 import { PdfHelper } from '../pdfHelper';
 import { FirebaseService } from '../firebaseService';
 import { CanvasCurlEngine } from '../reader/canvasCurlEngine';
+import { WebtoonVirtualizer } from '../reader/webtoonVirtualizer';
 import { SheetDatabase } from '../sheetDatabase';
 import { escapeHtml, hasAdminSession } from '../utils/security';
 
@@ -25,6 +26,7 @@ export class ReaderComponent {
   isFlipping = false;
   lastScrollTop = 0;
   canvasCurlEngine: any = null;
+  webtoonVirtualizer: WebtoonVirtualizer | null = null;
   unsubscribeComments?: () => void;
 
   readerWrapper: HTMLElement | null = null;
@@ -37,6 +39,12 @@ export class ReaderComponent {
   readerChapterSelect: HTMLSelectElement | null = null;
   readerPageSelect: HTMLSelectElement | null = null;
   progressBar: HTMLElement | null = null;
+
+  mobileQuickNav: HTMLElement | null = null;
+  mobileQuickNavPage: HTMLElement | null = null;
+  btnMobilePrevChap: HTMLButtonElement | null = null;
+  btnMobileNextChap: HTMLButtonElement | null = null;
+  btnMobileOpenSidebar: HTMLButtonElement | null = null;
 
   constructor(appState: any) {
     this.state = appState;
@@ -57,6 +65,31 @@ export class ReaderComponent {
     this.readerChapterSelect = document.getElementById('reader-chapter-select') as HTMLSelectElement | null;
     this.readerPageSelect = document.getElementById('reader-page-select') as HTMLSelectElement | null;
     this.progressBar = document.getElementById('reader-progress-bar');
+
+    this.mobileQuickNav = document.getElementById('mobile-quick-nav');
+    this.mobileQuickNavPage = document.getElementById('mobile-quick-nav-page');
+    this.btnMobilePrevChap = document.getElementById('btn-mobile-prev-chap') as HTMLButtonElement | null;
+    this.btnMobileNextChap = document.getElementById('btn-mobile-next-chap') as HTMLButtonElement | null;
+    this.btnMobileOpenSidebar = document.getElementById('btn-mobile-open-sidebar') as HTMLButtonElement | null;
+
+    if (this.btnMobilePrevChap) {
+      this.btnMobilePrevChap.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.prevChapter();
+      });
+    }
+    if (this.btnMobileNextChap) {
+      this.btnMobileNextChap.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.nextChapter();
+      });
+    }
+    if (this.btnMobileOpenSidebar) {
+      this.btnMobileOpenSidebar.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.toggleSidebar(false);
+      });
+    }
     
     // Bind Mobile Backdrop & Main Area outside click to close Sidebar
     const handleOutsideClick = () => {
@@ -523,6 +556,12 @@ export class ReaderComponent {
       return;
     }
 
+    // Dọn dẹp virtualizer cũ nếu đang chạy
+    if (this.webtoonVirtualizer) {
+      this.webtoonVirtualizer.destroy();
+      this.webtoonVirtualizer = null;
+    }
+
     // NẾU LÀ CHẾ ĐỘ MANGA NGANG (Right-to-Left / Left-to-Right)
     if (this.readingMode === 'horizontal-rtl' || this.readingMode === 'horizontal-ltr') {
       if (this.readerMainArea) this.readerMainArea.style.overflow = 'hidden';
@@ -534,65 +573,22 @@ export class ReaderComponent {
       }
     }
 
-    // MẶC ĐỊNH: CHẾ ĐỘ WEBTOON CUỘN DỌC
+    // MẶC ĐỊNH: CHẾ ĐỘ WEBTOON CUỘN DỌC VỚI VIRTUAL WINDOWING & GPU MEMORY CAPPING
     this.readerCanvas.className = `reader-canvas ${this.zoomLevel}`;
-    pages.forEach((pageItem, index) => {
-      const pageDiv = document.createElement('div');
-      pageDiv.className = 'reader-page-item';
-      pageDiv.dataset.pageIndex = String(index);
 
-      const img = document.createElement('img');
-      img.alt = `Trang ${index + 1}`;
-      img.referrerPolicy = 'no-referrer';
-      img.loading = index < 3 ? 'eager' : 'lazy';
-      img.decoding = 'async';
-
-      const fileId = DriveHelper.extractFileId(pageItem);
-      if (fileId) {
-        DriveHelper.attachImageFallback(img, fileId);
-      } else if (pageItem.startsWith('/') || pageItem.startsWith('data:') || pageItem.startsWith('blob:')) {
-        img.src = pageItem;
-        img.onerror = () => {
-          img.classList.add('img-load-error');
-          img.alt = 'Không thể tải ảnh.';
-        };
-      } else {
-        try {
-          const parsed = new URL(pageItem, window.location.href);
-          if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
-            img.src = parsed.href;
-            img.onerror = () => {
-              img.classList.add('img-load-error');
-              img.alt = 'Không thể tải ảnh.';
-            };
-          }
-        } catch {
-          img.src = pageItem;
-        }
+    this.webtoonVirtualizer = new WebtoonVirtualizer({
+      container: this.readerCanvas,
+      pages: pages,
+      creditImageUrl: '/Credit.webp',
+      bufferMargin: '1200px 0px 1200px 0px',
+      onPageVisible: (pageIdx) => {
+        this.currentPageIndex = pageIdx;
+        this.updateProgressUI();
+      },
+      onReachNearEnd: () => {
+        this.preloadNextChapter();
       }
-
-      pageDiv.appendChild(img);
-      this.readerCanvas?.appendChild(pageDiv);
     });
-
-    // 1. Tự động thêm ảnh Credit.webp vào cuối chương
-    const creditDiv = document.createElement('div');
-    creditDiv.className = 'reader-page-item reader-credit-item';
-    creditDiv.dataset.pageIndex = String(pages.length);
-
-    const creditImg = document.createElement('img');
-    creditImg.alt = 'Credit - Manga Translator Studio';
-    creditImg.src = '/Credit.webp';
-    creditImg.className = 'reader-credit-img';
-    creditImg.referrerPolicy = 'no-referrer';
-    creditImg.loading = 'lazy';
-    creditImg.decoding = 'async';
-    creditImg.onerror = () => {
-      creditDiv.style.display = 'none';
-    };
-
-    creditDiv.appendChild(creditImg);
-    this.readerCanvas.appendChild(creditDiv);
 
     // 2. Card Điều Hướng Kết Thúc Chương (Sleek End-of-Chapter Card)
     const currentIdx = (this.currentManga?.chapters || []).findIndex(c => c.id === this.currentChapter?.id);
@@ -740,6 +736,13 @@ export class ReaderComponent {
       return;
     }
 
+    if (this.webtoonVirtualizer) {
+      this.currentPageIndex = pageIdx;
+      this.webtoonVirtualizer.scrollToPage(pageIdx);
+      this.updateProgressUI();
+      return;
+    }
+
     const pageElements = this.readerCanvas?.querySelectorAll('.reader-page-item');
     if (pageElements && pageElements[pageIdx]) {
       const isMobileWebtoon = window.innerWidth <= 768 && document.body.classList.contains('is-webtoon-reading');
@@ -855,6 +858,18 @@ export class ReaderComponent {
     if (this.readerPageSelect) {
       this.readerPageSelect.value = String(this.currentPageIndex);
     }
+
+    // Cập nhật thanh điều hướng nổi di động (Mobile Quick Nav)
+    if (this.mobileQuickNavPage) {
+      this.mobileQuickNavPage.textContent = `${this.currentPageIndex + 1} / ${totalPages}`;
+    }
+    const currentIdx = (this.currentManga?.chapters || []).findIndex(c => c.id === this.currentChapter?.id);
+    if (this.btnMobilePrevChap) {
+      this.btnMobilePrevChap.disabled = currentIdx <= 0;
+    }
+    if (this.btnMobileNextChap) {
+      this.btnMobileNextChap.disabled = currentIdx === -1 || currentIdx >= (this.currentManga?.chapters || []).length - 1;
+    }
   }
 
   handleScroll(): void {
@@ -959,6 +974,10 @@ export class ReaderComponent {
   setReadingMode(mode: 'webtoon' | 'horizontal-rtl' | 'horizontal-ltr'): void {
     if (this.readingMode === mode) return;
     this.stopAutoScroll();
+    if (this.webtoonVirtualizer) {
+      this.webtoonVirtualizer.destroy();
+      this.webtoonVirtualizer = null;
+    }
     this.readingMode = mode;
     localStorage.setItem('drive_manga_reading_mode', mode);
     this.applyReadingModeBodyStyles();
@@ -994,6 +1013,10 @@ export class ReaderComponent {
 
   close(): void {
     this.stopAutoScroll();
+    if (this.webtoonVirtualizer) {
+      this.webtoonVirtualizer.destroy();
+      this.webtoonVirtualizer = null;
+    }
     if (this.unsubscribeComments) {
       this.unsubscribeComments();
       this.unsubscribeComments = undefined;

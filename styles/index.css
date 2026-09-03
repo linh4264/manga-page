@@ -1234,12 +1234,51 @@ body.is-webtoon-reading #detail-view {
   background: #000;
 }
 
+.reader-page-item.is-virtualized {
+  min-height: 500px;
+  background: #080b12;
+  position: relative;
+  overflow: hidden;
+}
+
+.reader-page-item.is-loading::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.01) 0%,
+    rgba(255, 255, 255, 0.05) 50%,
+    rgba(255, 255, 255, 0.01) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.8s infinite;
+  pointer-events: none;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
 .reader-page-item img {
   width: 100%;
   height: auto;
   display: block;
   object-fit: contain;
-  transition: opacity 0.3s ease;
+  opacity: 0;
+  transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.reader-page-item img.is-loaded {
+  opacity: 1;
 }
 
 .reader-page-item img.img-load-error {
@@ -1251,6 +1290,74 @@ body.is-webtoon-reading #detail-view {
   padding: 2rem;
   color: #f87171;
   text-align: center;
+  opacity: 1;
+}
+
+/* Mobile Quick Navigation Floating Bar (Glassmorphic Pill) */
+.mobile-quick-nav {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(0);
+  z-index: 1040;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+  padding: 6px 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+}
+
+.reader-wrapper.is-scrolling-down .mobile-quick-nav {
+  transform: translateX(-50%) translateY(80px);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mobile-quick-nav-btn {
+  background: none;
+  border: none;
+  color: #cbd5e1;
+  font-size: 0.85rem;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mobile-quick-nav-btn:active {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  transform: scale(0.92);
+}
+
+.mobile-quick-nav-btn:disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.mobile-quick-nav-page {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  padding: 0 6px;
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+}
+
+@media (max-width: 768px) {
+  .mobile-quick-nav {
+    display: flex;
+  }
 }
 
 /* Modal Popup Base */
