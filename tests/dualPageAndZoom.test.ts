@@ -46,6 +46,41 @@ describe('Dual-Page Spread Mode & Pinch-to-Zoom Touch Gestures', () => {
       const next = Math.max(0, Math.min(totalPages - 1, currentPage + step));
       expect(next).toBe(4); // Last page index (0 to 4)
     });
+
+    it('calculates realistic dual-page leaf width during 3D flip over the spine', () => {
+      const spreadWidth = 1000;
+      const halfW = spreadWidth / 2; // 500px per page
+
+      // Test progress = 0 (Resting spread)
+      let p = 0;
+      let t1 = p * 2;
+      let leafW1 = halfW * (1 - t1);
+      expect(leafW1).toBe(500); // Fully covers right page
+
+      // Test progress = 0.25 (Mid-way right fold)
+      p = 0.25;
+      t1 = p * 2; // 0.5
+      leafW1 = halfW * (1 - t1);
+      expect(leafW1).toBe(250); // Half contracted towards spine
+
+      // Test progress = 0.5 (Directly perpendicular over spine)
+      p = 0.5;
+      t1 = p * 2; // 1.0
+      leafW1 = halfW * (1 - t1);
+      expect(leafW1).toBe(0); // At spine
+
+      // Test progress = 0.75 (Expanding onto left page)
+      p = 0.75;
+      let t2 = (p - 0.5) * 2; // 0.5
+      let leafW2 = halfW * t2;
+      expect(leafW2).toBe(250); // Half expanded on left
+
+      // Test progress = 1.0 (Fully landed on left page)
+      p = 1.0;
+      t2 = (p - 0.5) * 2; // 1.0
+      leafW2 = halfW * t2;
+      expect(leafW2).toBe(500); // Fully covers left page
+    });
   });
 
   describe('2. PinchZoomHandler Functionality', () => {
