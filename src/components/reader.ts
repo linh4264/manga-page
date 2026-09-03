@@ -9,6 +9,7 @@ import { PdfHelper } from '../pdfHelper';
 import { FirebaseService } from '../firebaseService';
 import { CanvasCurlEngine } from '../reader/canvasCurlEngine';
 import { WebtoonVirtualizer } from '../reader/webtoonVirtualizer';
+import { PinchZoomHandler } from '../reader/pinchZoomHandler';
 import { SheetDatabase } from '../sheetDatabase';
 import { escapeHtml, hasAdminSession } from '../utils/security';
 
@@ -17,8 +18,9 @@ export class ReaderComponent {
   currentManga: Manga | null = null;
   currentChapter: Chapter | null = null;
   currentPageIndex = 0;
-  readingMode: 'webtoon' | 'horizontal-rtl' | 'horizontal-ltr';
+  readingMode: 'webtoon' | 'horizontal-rtl' | 'horizontal-ltr' | 'horizontal-dual';
   zoomLevel: 'default' | 'wide' | 'full';
+  pinchZoomHandler: PinchZoomHandler | null = null;
   autoScrollActive = false;
   autoScrollSpeed = 2; // px per tick
   autoScrollTimer: any = null;
@@ -272,6 +274,13 @@ export class ReaderComponent {
 
     // Ghi nhận lượt xem thật khi độc giả mở đọc chương
     FirebaseService.recordView(manga.id);
+
+    // Initialize Pinch-to-Zoom touch handler for mobile devices
+    if (this.readerCanvas && !this.pinchZoomHandler) {
+      this.pinchZoomHandler = new PinchZoomHandler({
+        container: this.readerCanvas
+      });
+    }
 
     // Tự động thu gọn Sidebar trên điện thoại khi mở đọc chương
     if (window.innerWidth <= 768) {
@@ -563,8 +572,8 @@ export class ReaderComponent {
       this.webtoonVirtualizer = null;
     }
 
-    // NẾU LÀ CHẾ ĐỘ MANGA NGANG (Right-to-Left / Left-to-Right)
-    if (this.readingMode === 'horizontal-rtl' || this.readingMode === 'horizontal-ltr') {
+    // NẾU LÀ CHẾ ĐỘ MANGA NGANG (Right-to-Left / Left-to-Right / Dual-Page)
+    if (this.readingMode.startsWith('horizontal')) {
       if (this.readerMainArea) this.readerMainArea.style.overflow = 'hidden';
       this.renderHorizontalFlipMode();
       return;
@@ -701,6 +710,7 @@ export class ReaderComponent {
       canvas,
       pages: displayPages,
       initialPage: this.currentPageIndex || 0,
+      isDualPage: this.readingMode === 'horizontal-dual',
       onPageChange: (newPageIdx) => {
         this.currentPageIndex = newPageIdx;
         this.updateProgressUI();
@@ -823,10 +833,16 @@ export class ReaderComponent {
     if (!this.readerPageSelect || !this.currentChapter) return;
     this.readerPageSelect.innerHTML = '';
     const pages = this.currentChapter.pages || [];
+    const isDual = this.readingMode === 'horizontal-dual' && (this.canvasCurlEngine?.isDual() ?? false);
+
     pages.forEach((_, idx) => {
       const opt = document.createElement('option');
       opt.value = String(idx);
-      opt.textContent = `Trang ${idx + 1} / ${pages.length + 1}`;
+      if (isDual && idx + 1 < pages.length) {
+        opt.textContent = `Trang ${idx + 1}-${idx + 2} / ${pages.length + 1}`;
+      } else {
+        opt.textContent = `Trang ${idx + 1} / ${pages.length + 1}`;
+      }
       this.readerPageSelect?.appendChild(opt);
     });
 
@@ -966,9 +982,12 @@ export class ReaderComponent {
     }
   }
 
-  setReadingMode(mode: 'webtoon' | 'horizontal-rtl' | 'horizontal-ltr'): void {
+  setReadingMode(mode: 'webtoon' | 'horizontal-rtl' | 'horizontal-ltr' | 'horizontal-dual'): void {
     if (this.readingMode === mode) return;
     this.stopAutoScroll();
+    if (this.pinchZoomHandler) {
+      this.pinchZoomHandler.resetZoom(false);
+    }
     if (this.webtoonVirtualizer) {
       this.webtoonVirtualizer.destroy();
       this.webtoonVirtualizer = null;
@@ -1008,6 +1027,16 @@ export class ReaderComponent {
 
   close(): void {
     this.stopAutoScroll();
+    if (this.pinchZoomHandler) {
+      this.pinchZoomHandler.destroy();
+      this.pinchZoomHandler = null;
+    }
+    if (this.canvasCurlEngine) {
+      try {
+        this.canvasCurlEngine.destroy();
+      } catch (e) {}
+      this.canvasCurlEngine = null;
+    }
     if (this.webtoonVirtualizer) {
       this.webtoonVirtualizer.destroy();
       this.webtoonVirtualizer = null;
@@ -1049,7 +1078,7 @@ export class ReaderComponent {
     const activeEl = document.activeElement;
     if (activeEl && (activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'INPUT')) return;
 
-    const isRTL = this.readingMode === 'horizontal-rtl';
+    const isRTL = this.readingMode === 'horizontal-rtl' || this.readingMode === 'horizontal-dual';
 
     switch (e.key) {
       case 'ArrowLeft':

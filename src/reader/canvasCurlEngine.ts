@@ -11,6 +11,7 @@ export interface CanvasCurlEngineOptions {
   canvas: HTMLCanvasElement;
   pages: string[];
   initialPage?: number;
+  isDualPage?: boolean;
   onPageChange?: (newPageIndex: number) => void;
   onReachStart?: () => void;
   onReachEnd?: () => void;
@@ -21,6 +22,7 @@ export class CanvasCurlEngine {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D | null;
   private pages: string[];
+  private isDualPage = false;
   private onPageChange?: (newPageIndex: number) => void;
   private onReachStart?: () => void;
   private onReachEnd?: () => void;
@@ -57,6 +59,7 @@ export class CanvasCurlEngine {
     this.viewport = options.viewport;
     this.canvas = options.canvas;
     this.pages = options.pages;
+    this.isDualPage = Boolean(options.isDualPage);
     this.state.currentPage = Math.max(0, Math.min(this.pages.length - 1, options.initialPage || 0));
     this.onPageChange = options.onPageChange;
     this.onReachStart = options.onReachStart;
@@ -129,7 +132,9 @@ export class CanvasCurlEngine {
   }
 
   public preload(currentIdx: number): void {
-    [currentIdx - 1, currentIdx, currentIdx + 1, currentIdx + 2].forEach(i => {
+    const range = this.isDualPage ? [-2, -1, 0, 1, 2, 3, 4] : [-1, 0, 1, 2];
+    range.forEach(offset => {
+      const i = currentIdx + offset;
       if (i >= 0 && i < this.pages.length) this.loadImage(i);
     });
   }
@@ -165,12 +170,43 @@ export class CanvasCurlEngine {
     if (!this.ctx || this.isDestroyed) return;
     const w = parseFloat(this.canvas.style.width) || this.canvas.width;
     const h = parseFloat(this.canvas.style.height) || this.canvas.height;
+    const isDouble = this.isDualPage && w >= 700;
 
     this.ctx.clearRect(0, 0, w, h);
     const currentImg = this.loadImage(this.state.currentPage);
 
     if (this.state.progress <= 0.001 || (!this.state.isDragging && !this.state.isAnimating)) {
-      this.drawImageFit(currentImg, 0, 0, w, h);
+      if (isDouble) {
+        const halfW = w / 2;
+        // In Manga RTL Spread: Right side is currentPage, Left side is currentPage + 1
+        const rightImg = this.loadImage(this.state.currentPage);
+        const leftImg = (this.state.currentPage + 1 < this.pages.length)
+          ? this.loadImage(this.state.currentPage + 1)
+          : null;
+
+        // Draw left page
+        if (leftImg) {
+          this.drawImageFit(leftImg, 0, 0, halfW, h);
+        } else {
+          this.ctx.fillStyle = '#0b0f19';
+          this.ctx.fillRect(0, 0, halfW, h);
+        }
+
+        // Draw right page
+        this.drawImageFit(rightImg, halfW, 0, halfW, h);
+
+        // Center spine crease / shadow
+        const spineShadow = this.ctx.createLinearGradient(halfW - 24, 0, halfW + 24, 0);
+        spineShadow.addColorStop(0, 'rgba(0, 0, 0, 0)');
+        spineShadow.addColorStop(0.42, 'rgba(0, 0, 0, 0.45)');
+        spineShadow.addColorStop(0.5, 'rgba(0, 0, 0, 0.7)');
+        spineShadow.addColorStop(0.58, 'rgba(0, 0, 0, 0.45)');
+        spineShadow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        this.ctx.fillStyle = spineShadow;
+        this.ctx.fillRect(halfW - 24, 0, 48, h);
+      } else {
+        this.drawImageFit(currentImg, 0, 0, w, h);
+      }
       return;
     }
 
@@ -282,11 +318,14 @@ export class CanvasCurlEngine {
     const maxW = this.viewport.clientWidth || window.innerWidth;
     const maxH = this.viewport.clientHeight || window.innerHeight;
 
+    const isDouble = this.isDualPage && maxW >= 768;
+    const targetRatio = isDouble ? 1.44 : 0.72;
+
     let renderH = Math.max(400, maxH - 12);
-    let renderW = Math.round(renderH * 0.72);
+    let renderW = Math.round(renderH * targetRatio);
     if (renderW > maxW - 12) {
       renderW = maxW - 12;
-      renderH = Math.round(renderW / 0.72);
+      renderH = Math.round(renderW / targetRatio);
     }
 
     this.canvas.style.width = `${renderW}px`;
@@ -352,20 +391,23 @@ export class CanvasCurlEngine {
     const h = parseFloat(this.canvas.style.height) || this.canvas.height;
     const dist = Math.hypot(pt.x - this.startPt.x, pt.y - this.startPt.y);
 
+    const isDouble = this.isDualPage && w >= 700;
+    const step = isDouble ? 2 : 1;
+
     if (!this.state.isDragging && dist > 5) {
       if (this.startPt.x < w * 0.5) {
         if (this.state.currentPage >= this.pages.length - 1) {
           if (this.onReachEnd) this.onReachEnd();
           return;
         }
-        this.state.targetPage = this.state.currentPage + 1;
+        this.state.targetPage = Math.min(this.pages.length - 1, this.state.currentPage + step);
         this.state.corner = { x: 0, y: this.startPt.y < h * 0.5 ? 0 : h };
       } else {
         if (this.state.currentPage <= 0) {
           if (this.onReachStart) this.onReachStart();
           return;
         }
-        this.state.targetPage = this.state.currentPage - 1;
+        this.state.targetPage = Math.max(0, this.state.currentPage - step);
         this.state.corner = { x: w, y: this.startPt.y < h * 0.5 ? 0 : h };
       }
       this.state.isDragging = true;
@@ -424,31 +466,40 @@ export class CanvasCurlEngine {
     if (this.state.isAnimating) return;
     const w = parseFloat(this.canvas.style.width) || this.canvas.width;
     const h = parseFloat(this.canvas.style.height) || this.canvas.height;
-    const targetIndex = this.state.currentPage + direction;
+    const isDouble = this.isDualPage && w >= 700;
+    const step = isDouble ? 2 : 1;
+    const targetIndex = this.state.currentPage + (direction * step);
 
-    if (targetIndex < 0) {
+    if (direction < 0 && this.state.currentPage <= 0) {
       if (this.onReachStart) this.onReachStart();
       return;
     }
-    if (targetIndex >= this.pages.length) {
+    if (direction > 0 && this.state.currentPage >= this.pages.length - 1) {
       if (this.onReachEnd) this.onReachEnd();
       return;
     }
 
-    this.state.targetPage = targetIndex;
+    const clampedTarget = Math.max(0, Math.min(this.pages.length - 1, targetIndex));
+
+    this.state.targetPage = clampedTarget;
     this.state.corner = direction > 0 ? { x: 0, y: h } : { x: w, y: h };
     this.state.finger = { ...this.state.corner };
     this.state.progress = 0.05;
 
     const targetX = this.state.corner.x === 0 ? w * 1.35 : -w * 0.35;
     this.animateTo(targetX, this.state.corner.y, () => {
-      this.state.currentPage = targetIndex;
+      this.state.currentPage = clampedTarget;
       this.state.progress = 0;
       this.state.targetPage = -1;
       this.preload(this.state.currentPage);
       this.requestDraw();
       if (this.onPageChange) this.onPageChange(this.state.currentPage);
     });
+  }
+
+  public isDual(): boolean {
+    const w = parseFloat(this.canvas.style.width) || this.canvas.width;
+    return this.isDualPage && w >= 700;
   }
 
   public turnToPage(pageIdx: number): void {
