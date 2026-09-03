@@ -239,6 +239,22 @@ export class MangaApp {
       }
     });
 
+    // DMCA Legal Modal Listeners
+    const dmcaModal = document.getElementById('modal-dmca');
+    document.getElementById('btn-open-dmca-modal')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      dmcaModal?.classList.remove('hidden');
+    });
+    document.getElementById('btn-close-dmca-modal')?.addEventListener('click', () => {
+      dmcaModal?.classList.add('hidden');
+    });
+    document.getElementById('btn-close-dmca-modal-bottom')?.addEventListener('click', () => {
+      dmcaModal?.classList.add('hidden');
+    });
+    dmcaModal?.addEventListener('click', (e) => {
+      if (e.target === dmcaModal) dmcaModal.classList.add('hidden');
+    });
+
     // Keyboard shortcut '/' for search focusing
     window.addEventListener('keydown', (e: KeyboardEvent) => {
       const activeTag = (document.activeElement as HTMLElement)?.tagName;

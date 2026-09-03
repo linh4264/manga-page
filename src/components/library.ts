@@ -2,7 +2,7 @@
  * Library Component: Renders manga grid catalog, genre filters, and manga detail view.
  */
 
-import { Manga, Chapter } from '../types/manga';
+import { Manga, Chapter, isMangaCopyrightLocked } from '../types/manga';
 import { DriveHelper } from '../driveHelper';
 import { FirebaseService } from '../firebaseService';
 import { StorageService } from '../storageService';
@@ -96,6 +96,9 @@ export class LibraryComponent {
     
     let catalog: Manga[] = this.state.getAllManga();
     const bookmarks: string[] = StorageService.getSync<string[]>('manga_bookmarks', []);
+
+    // Kill-Switch: Ẩn hoàn toàn các truyện bị khóa bản quyền khỏi thư viện độc giả
+    catalog = catalog.filter(m => !isMangaCopyrightLocked(m));
 
     // Filter by genre
     if (this.activeGenre === 'Bookmarks') {
@@ -248,10 +251,30 @@ export class LibraryComponent {
     const safeRating = escapeHtml(String(manga.rating || '4.9'));
     const safeMangaId = escapeHtml(manga.id);
 
+    const isLocked = isMangaCopyrightLocked(manga);
+
     this.detailContainer.innerHTML = `
       <button id="btn-back-library" class="btn-secondary" style="margin-bottom: 1.5rem;">
         <i class="fas fa-arrow-left"></i> Quay lại Thư viện
       </button>
+
+      ${isLocked ? `
+        <div class="glass-panel" style="padding: 1.5rem; margin-bottom: 1.5rem; border: 1px solid rgba(239, 68, 68, 0.5); background: rgba(239, 68, 68, 0.1); border-radius: var(--radius-md);">
+          <div style="display: flex; gap: 1.25rem; align-items: center;">
+            <i class="fas fa-shield-halved" style="font-size: 2.5rem; color: #f87171;"></i>
+            <div>
+              <h3 style="color: #f87171; margin-bottom: 0.35rem; font-size: 1.15rem;">Thông Báo Ngưng Phục Vụ Do Yêu Cầu Bản Quyền</h3>
+              <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6; margin: 0 0 0.4rem 0;">
+                Theo yêu cầu từ đơn vị sở hữu bản quyền, bộ truyện <strong>${safeTitle}</strong> đã được tạm ngưng phục vụ trên hệ thống DriveManga.
+              </p>
+              <div style="font-size: 0.85rem; color: var(--text-muted);">
+                Chủ sở hữu bản quyền hoặc đối tác liên quan cần thêm thông tin, vui lòng liên hệ trực tiếp: 
+                <a href="mailto:linhhoang4264@gmail.com" style="color: #818cf8; text-decoration: underline; font-weight: 600;">linhhoang4264@gmail.com</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      ` : ''}
 
       <div class="glass-panel detail-header-card">
         <div class="detail-cover" id="detail-cover-clickable" style="cursor: pointer; position: relative;" title="Bấm để thay đổi ảnh bìa">
@@ -268,7 +291,7 @@ export class LibraryComponent {
             <span><i class="far fa-eye" style="color: #60a5fa;"></i> <strong style="color: #ffffff;" data-manga-view-id="${safeMangaId}">${formattedViews}</strong> lượt xem</span>
             <span><i class="far fa-file-alt" style="color: #a855f7;"></i> <strong style="color: #ffffff;">${manga.chapters?.length || 0}</strong> tập</span>
             <span><i class="fas fa-star" style="color: #fbbf24;"></i> <strong style="color: #ffffff;">${safeRating}</strong></span>
-            <span><i class="fas fa-check-circle" style="color: #34d399;"></i> ${safeStatus}</span>
+            <span><i class="fas ${isLocked ? 'fa-ban' : 'fa-check-circle'}" style="color: ${isLocked ? '#ef4444' : '#34d399'};"></i> ${safeStatus}</span>
           </div>
 
           <div class="detail-tags">
@@ -278,9 +301,15 @@ export class LibraryComponent {
           <p class="detail-description">${safeDesc}</p>
 
           <div class="detail-actions">
-            <button id="btn-start-reading" class="btn-primary">
-              <i class="fas fa-book-open"></i> ${resumeText}
-            </button>
+            ${isLocked ? `
+              <button class="btn-secondary" disabled style="opacity: 0.5; cursor: not-allowed; border-color: rgba(239,68,68,0.5); color: #f87171;">
+                <i class="fas fa-lock"></i> Tạm Khóa Bản Quyền
+              </button>
+            ` : `
+              <button id="btn-start-reading" class="btn-primary">
+                <i class="fas fa-book-open"></i> ${resumeText}
+              </button>
+            `}
             <button id="btn-edit-manga-cover" class="btn-secondary" title="Thay đổi ảnh bìa hoặc sửa thông tin truyện">
               <i class="fas fa-image" style="color: #a855f7;"></i> Đổi Ảnh Bìa
             </button>
@@ -392,6 +421,10 @@ export class LibraryComponent {
       const chapterObj = manga.chapters.find(c => c.id === chId);
 
       chEl.querySelector('.chapter-info-click')?.addEventListener('click', () => {
+        if (isLocked) {
+          alert('Bộ truyện này đã tạm khóa theo yêu cầu bản quyền. Vui lòng liên hệ linhhoang4264@gmail.com');
+          return;
+        }
         if (chId) this.onReadChapter(manga, chId);
       });
 

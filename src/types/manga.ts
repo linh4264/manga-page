@@ -62,7 +62,7 @@ export interface Manga {
   originalTitle?: string;
   author?: string;
   artist?: string;
-  status?: string;
+  status?: 'Đang tiến hành' | 'Hoàn thành' | 'Bản quyền' | string;
   coverUrl?: string;
   coverDriveId?: string;
   bannerUrl?: string;
@@ -71,6 +71,15 @@ export interface Manga {
   rating?: number | string;
   views?: string | number;
   chapters: Chapter[];
+}
+
+/**
+ * Kiểm tra xem truyện có đang ở trạng thái Khóa Bản Quyền (Kill-Switch) hay không
+ */
+export function isMangaCopyrightLocked(manga?: { status?: string } | null): boolean {
+  if (!manga || !manga.status) return false;
+  const s = manga.status.trim().toLowerCase();
+  return s === 'bản quyền' || s === 'ban quyen' || s.includes('bản quyền') || s === 'copyright locked';
 }
 
 export interface CommentItem {

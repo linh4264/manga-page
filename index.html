@@ -145,6 +145,29 @@
       <!-- Dynamically rendered -->
     </section>
 
+    <!-- App Footer with DMCA Copyright Legal Shield -->
+    <footer class="app-footer" style="padding: 2.5rem 1.5rem; margin-top: 3.5rem; border-top: 1px solid var(--border-subtle); background: rgba(15, 23, 42, 0.6); text-align: center; font-size: 0.88rem; color: var(--text-muted); border-radius: var(--radius-md);">
+      <div style="max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 0.85rem;">
+        <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--text-primary); font-size: 1.15rem;">
+          <i class="fab fa-google-drive" style="color: #60a5fa;"></i> Drive<span style="color: var(--primary);">Manga</span>
+        </div>
+        <p style="max-width: 720px; line-height: 1.6; margin: 0; font-size: 0.82rem; color: var(--text-secondary);">
+          DriveManga là nền tảng phi lợi nhuận lập chỉ mục và đọc truyện tranh từ các tệp chia sẻ công khai của bên thứ ba (Google Drive). Chúng tôi không lưu trữ trực tiếp và không sở hữu bản quyền các tác phẩm này. Mọi quyền sở hữu trí tuệ thuộc về các tác giả và nhà xuất bản gốc.
+        </p>
+        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1.5rem; margin-top: 0.4rem; font-size: 0.85rem;">
+          <a href="javascript:void(0)" id="btn-open-dmca-modal" style="color: #818cf8; text-decoration: underline; cursor: pointer; font-weight: 600;">
+            <i class="fas fa-shield-halved"></i> Chính Sách Bản Quyền & DMCA Takedown Notice
+          </a>
+          <a href="mailto:linhhoang4264@gmail.com" style="color: var(--text-secondary); text-decoration: none;">
+            <i class="fas fa-envelope" style="color: #60a5fa;"></i> DMCA: linhhoang4264@gmail.com
+          </a>
+        </div>
+        <div style="margin-top: 0.5rem; font-size: 0.78rem; opacity: 0.6;">
+          © 2026 DriveManga • Tôn trọng & Tuân thủ Đạo luật Bản quyền Thiên niên kỷ Kỹ thuật số (DMCA Safe Harbor 17 U.S.C. § 512)
+        </div>
+      </div>
+    </footer>
+
   </main>
 
   <!-- Fullscreen Immersive Reader Component with Control Sidebar -->
@@ -281,6 +304,55 @@
   </div>
 
 
+
+  <!-- DMCA Safe Harbor Legal Modal -->
+  <div id="modal-dmca" class="modal-overlay hidden" style="z-index: 10000;">
+    <div class="modal-content glass-panel" style="max-width: 680px; max-height: 85vh; overflow-y: auto; padding: 2rem; border: 1px solid rgba(129, 140, 248, 0.3);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 1rem;">
+        <h2 style="font-size: 1.35rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.6rem; margin: 0;">
+          <i class="fas fa-shield-halved" style="color: #60a5fa;"></i> Chính Sách Bản Quyền & DMCA Notice
+        </h2>
+        <button type="button" id="btn-close-dmca-modal" class="btn-icon" style="cursor: pointer; background: transparent; border: none; font-size: 1.25rem; color: var(--text-muted);">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div style="color: var(--text-secondary); line-height: 1.7; font-size: 0.9rem;">
+        <h4 style="color: #f8fafc; margin: 1rem 0 0.4rem 0;"><i class="fas fa-info-circle" style="color: #818cf8;"></i> 1. Tuyên Bố Miễn Trừ Trách Nhiệm (Disclaimer)</h4>
+        <p>
+          DriveManga là nền tảng phi lợi nhuận lập chỉ mục và hiển thị nội dung truyện tranh từ các đường liên kết công khai do người dùng lưu trữ trên dịch vụ đám mây của bên thứ ba (Google Drive). 
+          DriveManga <strong>không sở hữu, không kinh doanh và không tự nhận quyền tác giả</strong> đối với bất kỳ tác phẩm nào. Mọi bản quyền, thương hiệu và quyền sở hữu trí tuệ đều thuộc về các tác giả, họa sĩ và nhà xuất bản gốc.
+        </p>
+
+        <h4 style="color: #f8fafc; margin: 1rem 0 0.4rem 0;"><i class="fas fa-scale-balanced" style="color: #34d399;"></i> 2. Tuân Thủ Đạo Luật Bản Quyền Thiên Niên Kỷ Kỹ Thuật Số (DMCA)</h4>
+        <p>
+          Chúng tôi hoàn toàn tôn trọng quyền sở hữu trí tuệ và tuân thủ các quy định tại điều khoản Cảng an toàn (Safe Harbor - 17 U.S.C. § 512(c)). Chúng tôi sẵn sàng hỗ trợ gỡ bỏ hoặc tạm ngưng truy cập bất kỳ tác phẩm nào ngay khi nhận được yêu cầu hợp lệ từ đơn vị giữ bản quyền.
+        </p>
+
+        <h4 style="color: #f8fafc; margin: 1rem 0 0.4rem 0;"><i class="fas fa-envelope-open-text" style="color: #fbbf24;"></i> 3. Quy Trình Yêu Cầu Gỡ Bỏ (Takedown Notice)</h4>
+        <p>Nếu bạn là chủ sở hữu bản quyền hoặc đại diện pháp lý được ủy quyền và muốn gỡ bỏ tác phẩm khỏi DriveManga, vui lòng gửi email kèm các thông tin sau:</p>
+        <ul style="padding-left: 1.4rem; margin: 0.5rem 0;">
+          <li>Tên bộ truyện và link trang truyện cụ thể trên DriveManga cần gỡ.</li>
+          <li>Căn cứ hoặc tài liệu chứng minh quyền sở hữu bản quyền hợp pháp.</li>
+          <li>Thông tin liên hệ chính thức (Tên cá nhân/tổ chức, email, số điện thoại).</li>
+        </ul>
+
+        <div style="background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(129, 140, 248, 0.35); border-radius: var(--radius-sm); padding: 1.25rem; margin: 1.25rem 0; text-align: center;">
+          <div style="font-weight: 700; color: #a5b4fc; margin-bottom: 0.35rem; font-size: 0.95rem;">Hòm Thư Tiếp Nhận Yêu Cầu Bản Quyền:</div>
+          <a href="mailto:linhhoang4264@gmail.com" style="color: #60a5fa; font-size: 1.15rem; font-weight: 800; text-decoration: underline;">
+            linhhoang4264@gmail.com
+          </a>
+          <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.4rem;">
+            Cam kết phản hồi và gỡ bỏ tác phẩm trong vòng <strong>24 đến 48 giờ</strong> kể từ khi nhận được email hợp lệ.
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top: 1.5rem; text-align: right;">
+        <button type="button" id="btn-close-dmca-modal-bottom" class="btn-primary" style="padding: 8px 24px;">Tôi Đã Hiểu</button>
+      </div>
+    </div>
+  </div>
 
   <!-- PDF.js CDN Library for Client-Side PDF Rendering -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"

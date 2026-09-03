@@ -3,7 +3,7 @@
  * and PDF direct embedded viewing.
  */
 
-import { Manga, Chapter, CommentItem } from '../types/manga';
+import { Manga, Chapter, CommentItem, isMangaCopyrightLocked } from '../types/manga';
 import { DriveHelper } from '../driveHelper';
 import { PdfHelper } from '../pdfHelper';
 import { FirebaseService } from '../firebaseService';
@@ -234,6 +234,12 @@ export class ReaderComponent {
   open(manga: Manga, chapterId?: string, pushState = true): void {
     if (pushState && this.state?.router) {
       this.state.router.goChapter(manga.id, chapterId || manga.chapters[0]?.id);
+      return;
+    }
+
+    if (isMangaCopyrightLocked(manga)) {
+      alert(`⚠️ Bộ truyện "${manga.title}" đã tạm ngưng phục vụ do yêu cầu bản quyền. Mọi chi tiết xin liên hệ: linhhoang4264@gmail.com`);
+      this.close();
       return;
     }
 

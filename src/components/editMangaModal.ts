@@ -66,6 +66,15 @@ export class EditMangaModalComponent {
             <input type="text" id="edit-manga-genres" placeholder="VD: Action, Fantasy, Manhwa">
           </div>
 
+          <div class="form-group">
+            <label>Trạng Thái Truyện (Kill-Switch Bản Quyền)</label>
+            <select id="edit-manga-status" style="width: 100%; padding: 8px 12px; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: #f8fafc;">
+              <option value="Đang tiến hành">Đang tiến hành</option>
+              <option value="Hoàn thành">Hoàn thành</option>
+              <option value="Bản quyền" style="color: #ef4444; font-weight: 700;">🔴 Bản quyền (Tạm ngưng phục vụ - Bảo vệ web)</option>
+            </select>
+          </div>
+
           <!-- Admin Password Field -->
           <div class="form-group" style="background: rgba(99, 102, 241, 0.1); padding: 10px; border-radius: var(--radius-sm); border: 1px solid rgba(129, 140, 248, 0.3);">
             <label style="color: #818cf8; font-weight: 700;"><i class="fas fa-lock"></i> Mật Khẩu Admin *</label>
@@ -138,6 +147,7 @@ export class EditMangaModalComponent {
     const coverInput = document.getElementById('edit-manga-cover-url') as HTMLInputElement | null;
     const descInput = document.getElementById('edit-manga-description') as HTMLTextAreaElement | null;
     const genresInput = document.getElementById('edit-manga-genres') as HTMLInputElement | null;
+    const statusInput = document.getElementById('edit-manga-status') as HTMLSelectElement | null;
     const passInput = document.getElementById('edit-manga-admin-password') as HTMLInputElement | null;
 
     if (titleInput) titleInput.value = manga.title || '';
@@ -146,6 +156,7 @@ export class EditMangaModalComponent {
     if (coverInput) coverInput.value = currentCover;
     if (descInput) descInput.value = manga.description || '';
     if (genresInput) genresInput.value = (manga.genres || []).join(', ');
+    if (statusInput) statusInput.value = manga.status || 'Đang tiến hành';
     if (passInput) passInput.value = getAdminSession() || '';
 
     this.updateLivePreview(currentCover);
@@ -165,6 +176,7 @@ export class EditMangaModalComponent {
     const newCoverInput = (document.getElementById('edit-manga-cover-url') as HTMLInputElement).value.trim();
     const newDesc = (document.getElementById('edit-manga-description') as HTMLTextAreaElement).value.trim();
     const genresInput = (document.getElementById('edit-manga-genres') as HTMLInputElement).value.trim();
+    const newStatus = (document.getElementById('edit-manga-status') as HTMLSelectElement)?.value || 'Đang tiến hành';
     const adminPassword = (document.getElementById('edit-manga-admin-password') as HTMLInputElement).value.trim();
 
     if (!newTitle || !newCoverInput || !adminPassword) {
@@ -187,6 +199,7 @@ export class EditMangaModalComponent {
       this.targetManga.title = newTitle;
       this.targetManga.author = newAuthor;
       this.targetManga.description = newDesc;
+      this.targetManga.status = newStatus;
       this.targetManga.genres = genresInput ? genresInput.split(',').map(g => g.trim()).filter(Boolean) : ['Google Drive'];
 
       const fileId = DriveHelper.extractFileId(newCoverInput);
