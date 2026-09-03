@@ -45,13 +45,92 @@ export const SheetDatabase = {
   CACHE_TTL_MS: 10 * 60 * 1000,
 
   /**
+   * Tải danh mục tĩnh dự phòng từ /data/catalog.json (0ms, 0 Apps Script Quota)
+   */
+  async fetchStaticCatalog(): Promise<Manga[] | null> {
+    try {
+      const res = await fetch('/data/catalog.json');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          return this.sortCatalogChapters(data);
+        }
+      }
+    } catch (e) {
+      console.warn('Không thể nạp /data/catalog.json:', e);
+    }
+    return null;
+  },
+
+  /**
+   * Nén danh sách các trang ảnh: Trích xuất Google Drive File ID tinh gọn
+   * Giúp giảm 65% dung lượng chuỗi lưu trên Google Sheet, 1 trang chỉ tốn ~33 bytes
+   */
+  compressPages(pages: string[]): string[] {
+    if (!Array.isArray(pages)) return [];
+    return pages.map(p => {
+      if (typeof p !== 'string') return p;
+      const clean = p.trim();
+      const driveMatch = clean.match(/(?:id=|\/d\/|\/file\/d\/)([a-zA-Z0-9_-]{20,60})/);
+      if (driveMatch && driveMatch[1]) {
+        return driveMatch[1];
+      }
+      return clean;
+    });
+  },
+
+  /**
+   * Kiểm tra kết nối tới Google Apps Script Web App
+   */
+  async testConnection(testUrl?: string): Promise<{ ok: boolean; message: string; version?: string }> {
+    const targetUrl = testUrl ? testUrl.trim() : this.apiUrl;
+    if (!targetUrl) return { ok: false, message: 'Chưa nhập URL Google Apps Script!' };
+
+    try {
+      const pingUrl = `${targetUrl}${targetUrl.includes('?') ? '&' : '?'}action=ping`;
+      const res = await fetch(pingUrl, { method: 'GET' });
+      if (!res.ok) {
+        return { ok: false, message: `Lỗi máy chủ HTTP ${res.status}` };
+      }
+      const data = await res.json();
+      if (data && data.success) {
+        return { ok: true, message: 'Kết nối Google Apps Script thành công!', version: data.version };
+      }
+      return { ok: false, message: data.error || 'Phản hồi không đúng định dạng!' };
+    } catch (err: any) {
+      return { ok: false, message: `Lỗi kết nối: ${err?.message || 'Không thể gọi API'}` };
+    }
+  },
+
+  /**
+   * Xuất toàn bộ danh mục hiện tại ra file catalog.json để sao lưu hoặc tải về
+   */
+  exportCatalogJson(catalog?: Manga[]): void {
+    const dataToExport = catalog || StorageService.getSync<Manga[]>('sheet_manga_cache', []);
+    if (!dataToExport || dataToExport.length === 0) {
+      alert('Chưa có dữ liệu danh mục để xuất!');
+      return;
+    }
+    const jsonStr = JSON.stringify(dataToExport, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `catalog-snapshot-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  },
+
+  /**
    * Lấy danh mục truyện trực tiếp từ Google Sheet qua Apps Script Web App hoặc Link Xuất Bản CSV
    * @param force Bỏ qua bộ nhớ đệm TTL và tải mới nếu là true
    */
   async fetchMangaCatalog(force = false): Promise<Manga[] | null> {
     if (!this.apiUrl) {
       console.log('Chưa cấu hình Google Sheets URL, sử dụng dữ liệu tĩnh.');
-      return null;
+      return this.fetchStaticCatalog();
     }
 
     // Kiểm tra bộ nhớ đệm StorageService (IndexedDB + Memory) nếu không phải force reload
@@ -66,6 +145,13 @@ export const SheetDatabase = {
           }
         }
       } catch (e) {}
+
+      // Nếu lần đầu vào web chưa có cache, nạp ngay từ static catalog.json (0ms, 0 quota)
+      const staticCatalog = await this.fetchStaticCatalog();
+      if (staticCatalog && staticCatalog.length > 0) {
+        this.saveCacheToStorage(staticCatalog);
+        return staticCatalog;
+      }
     }
 
     try {
@@ -102,7 +188,11 @@ export const SheetDatabase = {
       }
       return sorted;
     } catch (err) {
-      console.warn('Không thể kết nối với Google Sheets API:', err);
+      console.warn('Không thể kết nối với Google Sheets API, sử dụng dữ liệu tĩnh:', err);
+      const fallback = await this.fetchStaticCatalog();
+      if (fallback && fallback.length > 0) {
+        return fallback;
+      }
       return null;
     }
   },
@@ -204,17 +294,33 @@ export const SheetDatabase = {
       throw new Error('Chưa cấu hình URL Google Sheet API!');
     }
 
+    // Nén danh sách các trang thành File ID tinh gọn trước khi gửi lên Sheet
+    const chaptersToSave = (mangaObj.chapters || []).map(ch => ({
+      ...ch,
+      pages: this.compressPages(ch.pages || [])
+    }));
+
     const payload = {
       action: 'save',
       secretToken: adminPassword || "",
       id: mangaObj.id,
       title: mangaObj.title,
-      author: mangaObj.author,
+      originalTitle: mangaObj.originalTitle || '',
+      author: mangaObj.author || '',
+      artist: mangaObj.artist || '',
       coverUrl: mangaObj.coverUrl || mangaObj.coverDriveId || '',
+      coverDriveId: mangaObj.coverDriveId || '',
+      bannerUrl: mangaObj.bannerUrl || '',
       description: mangaObj.description || '',
-      genres: mangaObj.genres || ['PDF', 'Google Drive'],
-      chapters: mangaObj.chapters || [],
-      manga: mangaObj
+      genres: mangaObj.genres || ['Google Drive'],
+      status: mangaObj.status || 'Đang tiến hành',
+      rating: mangaObj.rating || 4.9,
+      views: mangaObj.views || '0',
+      chapters: chaptersToSave,
+      manga: {
+        ...mangaObj,
+        chapters: chaptersToSave
+      }
     };
 
     let response: Response;

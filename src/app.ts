@@ -209,20 +209,33 @@ export class MangaApp {
       this.syncGoogleSheetData(true);
     });
 
+    document.getElementById('btn-export-catalog-json')?.addEventListener('click', () => {
+      SheetDatabase.exportCatalogJson(this.getAllManga());
+    });
+
     document.getElementById('btn-open-import')?.addEventListener('click', () => {
       this.importModalComponent.open();
     });
 
-    document.getElementById('btn-open-config-sheet')?.addEventListener('click', () => {
+    document.getElementById('btn-open-config-sheet')?.addEventListener('click', async () => {
       const currentUrl = SheetDatabase.apiUrl;
       const inputUrl = prompt(
         'Nhập Web App URL của Google Apps Script (dùng Google Sheet làm Database):\n\nVí dụ: https://script.google.com/macros/s/AKfycbx.../exec',
         currentUrl
       );
-      if (inputUrl !== null) {
-        SheetDatabase.setApiUrl(inputUrl);
-        alert('Đã lưu URL Google Apps Script! Trang web sẽ tự động đồng bộ dữ liệu với Google Sheet.');
-        this.syncGoogleSheetData(true);
+      if (inputUrl !== null && inputUrl.trim()) {
+        const testRes = await SheetDatabase.testConnection(inputUrl);
+        if (testRes.ok) {
+          SheetDatabase.setApiUrl(inputUrl);
+          alert(`✅ ${testRes.message} (Phiên bản Script: ${testRes.version || '2.0'})`);
+          this.syncGoogleSheetData(true);
+        } else {
+          const confirmSave = confirm(`⚠️ Không thể kết nối với Script:\n${testRes.message}\n\nBạn vẫn muốn lưu URL này chứ?`);
+          if (confirmSave) {
+            SheetDatabase.setApiUrl(inputUrl);
+            this.syncGoogleSheetData(true);
+          }
+        }
       }
     });
 
