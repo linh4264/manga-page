@@ -265,11 +265,42 @@ export class MangaApp {
       }
     });
 
+    // Tải trước dữ liệu tĩnh nếu lần đầu truy cập chưa có cache
+    if (!this.sheetMangaList || this.sheetMangaList.length === 0) {
+      const cached = StorageService.getSync<Manga[]>('sheet_manga_cache', []);
+      if (cached && cached.length > 0) {
+        this.sheetMangaList = cached;
+      } else {
+        const staticCatalog = await SheetDatabase.fetchStaticCatalog();
+        if (staticCatalog && staticCatalog.length > 0) {
+          this.sheetMangaList = staticCatalog;
+          StorageService.setItem('sheet_manga_cache', staticCatalog);
+        }
+      }
+    }
+
     // Initial render
     this.libraryComponent.renderCatalog();
 
     // Sync live Google Sheet data in background on every page load (Stale-While-Revalidate)
     this.syncGoogleSheetData(false);
+
+    // Tự động đồng bộ ngầm khi người dùng quay lại tab sau một khoảng thời gian
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          const lastSync = StorageService.getSync<string | null>('sheet_manga_sync_time', null);
+          if (lastSync) {
+            const age = Date.now() - parseInt(lastSync, 10);
+            if (age >= SheetDatabase.AUTO_SYNC_THROTTLE_MS) {
+              this.syncGoogleSheetData(false);
+            }
+          } else {
+            this.syncGoogleSheetData(false);
+          }
+        }
+      });
+    }
   }
 
   async syncGoogleSheetData(force = false): Promise<void> {
@@ -282,15 +313,50 @@ export class MangaApp {
       try {
         const liveData = await SheetDatabase.fetchMangaCatalog(force);
         if (liveData && liveData.length > 0) {
+          const isDifferent = JSON.stringify(this.sheetMangaList) !== JSON.stringify(liveData);
+
           this.sheetMangaList = liveData;
           StorageService.setItem('sheet_manga_cache', liveData);
           StorageService.setItem('sheet_manga_sync_time', String(now));
 
-          // Cập nhật lại view hiện tại (Library, Detail hoặc Reader) với dữ liệu mới nhất
-          if (this.router) {
-            this.router.handleRoute();
-          } else if (this.libraryComponent) {
-            this.libraryComponent.renderCatalog();
+          // Chỉ cập nhật lại giao diện nếu có dữ liệu mới hoặc người dùng yêu cầu force sync
+          if (isDifferent || force) {
+            const isReaderOpen = document.getElementById('reader-wrapper') && !document.getElementById('reader-wrapper')?.classList.contains('hidden');
+            const isDetailOpen = document.getElementById('detail-view') && !document.getElementById('detail-view')?.classList.contains('hidden');
+
+            if (isReaderOpen && this.readerComponent && this.readerComponent.currentManga) {
+              // Đang trong màn hình đọc: Cập nhật object manga và dropdown chọn chương
+              // TUYỆT ĐỐI KHÔNG gọi router.handleRoute() để tránh reset cuộn hoặc tải lại ảnh
+              const updatedManga = liveData.find(m => m.id === this.readerComponent.currentManga?.id);
+              if (updatedManga) {
+                this.readerComponent.currentManga = updatedManga;
+                if (this.readerComponent.readerChapterSelect) {
+                  const currentChapterId = this.readerComponent.currentChapter?.id;
+                  this.readerComponent.readerChapterSelect.innerHTML = '';
+                  updatedManga.chapters?.forEach(ch => {
+                    const opt = document.createElement('option');
+                    opt.value = ch.id;
+                    opt.textContent = ch.title;
+                    if (ch.id === currentChapterId) opt.selected = true;
+                    this.readerComponent.readerChapterSelect?.appendChild(opt);
+                  });
+                }
+              }
+            } else if (isDetailOpen && this.libraryComponent) {
+              // Đang xem chi tiết truyện: Cập nhật lại view chi tiết với thông tin và danh sách chương mới
+              const parts = this.router ? this.router.getRouteParts() : [];
+              const currentMangaId = parts[0];
+              const targetManga = liveData.find(m => m.id === currentMangaId || m.title.toLowerCase().replace(/\s+/g, '-') === currentMangaId?.toLowerCase());
+              if (targetManga) {
+                this.libraryComponent.showDetailView(targetManga, false);
+              }
+            } else {
+              // Đang ở thư viện / trang chủ: Cập nhật bộ lọc thể loại và lưới truyện
+              if (this.libraryComponent) {
+                this.libraryComponent.setupGenreFilter();
+                this.libraryComponent.renderCatalog();
+              }
+            }
           }
         }
       } catch (err) {

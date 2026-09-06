@@ -40,9 +40,20 @@ export const SheetDatabase = {
   },
 
   /**
-   * Thời gian sống của bộ nhớ đệm Catalog (10 phút)
+   * Thời gian sống tối đa của bộ nhớ đệm Offline Catalog (10 phút)
    */
   CACHE_TTL_MS: 10 * 60 * 1000,
+
+  /**
+   * Giãn cách tối thiểu giữa các lần tự động đồng bộ ngầm khi vào trang (60 giây)
+   * Ngăn spam request lên Google Apps Script khi người dùng tải lại trang liên tục
+   */
+  AUTO_SYNC_THROTTLE_MS: 60 * 1000,
+
+  /**
+   * Khử trùng lặp request: Promise lưu trữ request fetch catalog đang chạy ngầm
+   */
+  _inFlightFetch: null as Promise<Manga[] | null> | null,
 
   /**
    * Tải danh mục tĩnh dự phòng từ /data/catalog.json (0ms, 0 Apps Script Quota)
@@ -125,7 +136,12 @@ export const SheetDatabase = {
 
   /**
    * Lấy danh mục truyện trực tiếp từ Google Sheet qua Apps Script Web App hoặc Link Xuất Bản CSV
-   * @param force Bỏ qua bộ nhớ đệm TTL và tải mới nếu là true
+   * Áp dụng mô hình Stale-While-Revalidate:
+   * - Nếu !force và vừa mới đồng bộ (< AUTO_SYNC_THROTTLE_MS): Trả về cache tức thì.
+   * - Nếu !force và đã quá giãn cách (>= AUTO_SYNC_THROTTLE_MS) hoặc force = true: Gửi request tới Google Sheet.
+   * - Nếu Google Sheet lỗi hoặc mất mạng: Tự động dự phòng về Cache hiện tại hoặc static /data/catalog.json.
+   * - Khử trùng lặp (Request Deduplication): Nếu có 1 request đang chạy, tái sử dụng Promise.
+   * @param force Bỏ qua bộ nhớ đệm và ép buộc tải mới từ Google Sheet
    */
   async fetchMangaCatalog(force = false): Promise<Manga[] | null> {
     if (!this.apiUrl) {
@@ -133,68 +149,83 @@ export const SheetDatabase = {
       return this.fetchStaticCatalog();
     }
 
-    // Kiểm tra bộ nhớ đệm StorageService (IndexedDB + Memory) nếu không phải force reload
+    // 1. Kiểm tra giãn cách đồng bộ ngầm nếu không phải force reload
     if (!force) {
       try {
         const lastSync = StorageService.getSync<string | null>('sheet_manga_sync_time', null);
         const cached = StorageService.getSync<Manga[] | null>('sheet_manga_cache', null);
         if (lastSync && cached && Array.isArray(cached) && cached.length > 0) {
           const age = Date.now() - parseInt(lastSync, 10);
-          if (age < this.CACHE_TTL_MS) {
+          if (age < this.AUTO_SYNC_THROTTLE_MS) {
             return this.sortCatalogChapters(cached);
           }
         }
       } catch (e) {}
-
-      // Nếu lần đầu vào web chưa có cache, nạp ngay từ static catalog.json (0ms, 0 quota)
-      const staticCatalog = await this.fetchStaticCatalog();
-      if (staticCatalog && staticCatalog.length > 0) {
-        this.saveCacheToStorage(staticCatalog);
-        return staticCatalog;
-      }
     }
 
-    try {
-      const url = force 
-        ? `${this.apiUrl}${this.apiUrl.includes('?') ? '&' : '?'}_t=${Date.now()}`
-        : this.apiUrl;
-
-      const response = await fetch(url, { 
-        method: 'GET',
-        headers: { 'Accept': 'application/json, text/csv, */*' }
-      });
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      
-      const contentType = response.headers.get('content-type') || '';
-      
-      // Nếu là link Xuất Bản CSV từ Google Sheet (pub?output=csv)
-      if (this.apiUrl.includes('output=csv') || contentType.includes('text/csv') || contentType.includes('text/plain')) {
-        const csvText = await response.text();
-        const parsedCsv = this.parseCSV(csvText);
-        this.saveCacheToStorage(parsedCsv);
-        return parsedCsv;
-      }
-
-      const data = await response.json();
-      let result: Manga[] | null = null;
-      if (Array.isArray(data)) {
-        result = data;
-      } else if (data && data.mangaCatalog && Array.isArray(data.mangaCatalog)) {
-        result = data.mangaCatalog;
-      }
-      const sorted = this.sortCatalogChapters(result);
-      if (sorted && sorted.length > 0) {
-        this.saveCacheToStorage(sorted);
-      }
-      return sorted;
-    } catch (err) {
-      console.warn('Không thể kết nối với Google Sheets API, sử dụng dữ liệu tĩnh:', err);
-      const fallback = await this.fetchStaticCatalog();
-      if (fallback && fallback.length > 0) {
-        return fallback;
-      }
-      return null;
+    // 2. Request deduplication: Nếu đang có 1 request fetch đang chạy, dùng chung Promise
+    if (this._inFlightFetch && !force) {
+      return this._inFlightFetch;
     }
+
+    // 3. Thực hiện fetch từ Google Sheet
+    const fetchPromise = (async (): Promise<Manga[] | null> => {
+      try {
+        const url = force 
+          ? `${this.apiUrl}${this.apiUrl.includes('?') ? '&' : '?'}_t=${Date.now()}`
+          : this.apiUrl;
+
+        const response = await fetch(url, { 
+          method: 'GET',
+          headers: { 'Accept': 'application/json, text/csv, */*' }
+        });
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        
+        const contentType = response.headers.get('content-type') || '';
+        
+        // Nếu là link Xuất Bản CSV từ Google Sheet (pub?output=csv)
+        if (this.apiUrl.includes('output=csv') || contentType.includes('text/csv') || contentType.includes('text/plain')) {
+          const csvText = await response.text();
+          const parsedCsv = this.parseCSV(csvText);
+          this.saveCacheToStorage(parsedCsv);
+          return parsedCsv;
+        }
+
+        const data = await response.json();
+        let result: Manga[] | null = null;
+        if (Array.isArray(data)) {
+          result = data;
+        } else if (data && data.mangaCatalog && Array.isArray(data.mangaCatalog)) {
+          result = data.mangaCatalog;
+        }
+        const sorted = this.sortCatalogChapters(result);
+        if (sorted && sorted.length > 0) {
+          this.saveCacheToStorage(sorted);
+        }
+        return sorted;
+      } catch (err) {
+        console.warn('Không thể kết nối với Google Sheets API, sử dụng dữ liệu dự phòng:', err);
+        // Fallback 1: Trả về dữ liệu từ Cache Storage nếu có
+        try {
+          const cached = StorageService.getSync<Manga[] | null>('sheet_manga_cache', null);
+          if (cached && Array.isArray(cached) && cached.length > 0) {
+            return this.sortCatalogChapters(cached);
+          }
+        } catch (e) {}
+
+        // Fallback 2: Trả về static catalog.json
+        const fallback = await this.fetchStaticCatalog();
+        if (fallback && fallback.length > 0) {
+          return fallback;
+        }
+        return null;
+      } finally {
+        this._inFlightFetch = null;
+      }
+    })();
+
+    this._inFlightFetch = fetchPromise;
+    return fetchPromise;
   },
 
   saveCacheToStorage(catalog: Manga[] | null): void {
