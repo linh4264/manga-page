@@ -95,47 +95,40 @@ export function isSpamOrProfane(text?: string | null): { isBlocked: boolean; rea
 const ADMIN_SESSION_KEY = 'drive_manga_admin_session';
 
 /**
- * Clean up legacy unsafe plaintext password in localStorage if it exists
+ * Clean up legacy storage entries to prevent clear-text credential persistence in browser storage (CWE-312)
  */
 export function purgeLegacyStoragePassword(): void {
   if (typeof localStorage !== 'undefined') {
     try {
-      if (localStorage.getItem('drive_manga_admin_pw')) {
-        localStorage.removeItem('drive_manga_admin_pw');
-      }
+      localStorage.removeItem('drive_manga_admin_pw');
+    } catch {}
+  }
+  if (typeof sessionStorage !== 'undefined') {
+    try {
+      sessionStorage.removeItem(ADMIN_SESSION_KEY);
     } catch {}
   }
 }
 
+// Store Admin session credentials strictly in ephemeral memory (JavaScript heap).
+// This guarantees credentials are never written to disk or DOM WebStorage (localStorage/sessionStorage).
 let _memorySessionPassword: string | null = null;
 
 /**
- * Retrieve active Admin session password from sessionStorage (or memory fallback)
+ * Retrieve active Admin session credential from memory
  */
 export function getAdminSession(): string | null {
   purgeLegacyStoragePassword();
-  if (typeof sessionStorage !== 'undefined') {
-    try {
-      const val = sessionStorage.getItem(ADMIN_SESSION_KEY);
-      if (val) return val;
-    } catch {}
-  }
   return _memorySessionPassword;
 }
 
 /**
- * Store Admin session in sessionStorage & memory (Automatically purged when browser/tab is closed)
+ * Store Admin session credential strictly in ephemeral memory
  */
-export function setAdminSession(password: string): void {
+export function setAdminSession(token: string): void {
   purgeLegacyStoragePassword();
-  if (!password) return;
-  const clean = password.trim();
-  _memorySessionPassword = clean;
-  if (typeof sessionStorage !== 'undefined') {
-    try {
-      sessionStorage.setItem(ADMIN_SESSION_KEY, clean);
-    } catch {}
-  }
+  if (!token) return;
+  _memorySessionPassword = token.trim();
 }
 
 /**
@@ -144,11 +137,6 @@ export function setAdminSession(password: string): void {
 export function clearAdminSession(): void {
   purgeLegacyStoragePassword();
   _memorySessionPassword = null;
-  if (typeof sessionStorage !== 'undefined') {
-    try {
-      sessionStorage.removeItem(ADMIN_SESSION_KEY);
-    } catch {}
-  }
 }
 
 /**
@@ -160,3 +148,4 @@ export function hasAdminSession(): boolean {
 
 // Automatically purge legacy storage password on module load
 purgeLegacyStoragePassword();
+

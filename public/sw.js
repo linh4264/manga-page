@@ -49,10 +49,17 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
 
   // 1. Check if requested image is in Offline Chapters Cache
+  const hostname = url.hostname;
+  const isImageHost =
+    hostname === 'googleusercontent.com' ||
+    hostname.endsWith('.googleusercontent.com') ||
+    hostname === 'drive.google.com' ||
+    hostname.endsWith('.drive.google.com') ||
+    hostname === 'wsrv.nl' ||
+    hostname.endsWith('.wsrv.nl');
+
   if (
-    url.hostname.includes('googleusercontent.com') ||
-    url.hostname.includes('drive.google.com') ||
-    url.hostname.includes('wsrv.nl') ||
+    isImageHost ||
     url.pathname.includes('/api/image-proxy') ||
     url.pathname.endsWith('.jpg') ||
     url.pathname.endsWith('.jpeg') ||
@@ -105,11 +112,17 @@ self.addEventListener('fetch', (event) => {
   }
 
   // 3. Static Assets (CSS, JS, Fonts) - Stale While Revalidate
+  const isTrustedCdn =
+    hostname === 'cdnjs.cloudflare.com' ||
+    hostname.endsWith('.cdnjs.cloudflare.com') ||
+    hostname === 'fonts.googleapis.com' ||
+    hostname.endsWith('.fonts.googleapis.com') ||
+    hostname === 'fonts.gstatic.com' ||
+    hostname.endsWith('.fonts.gstatic.com');
+
   if (
     url.origin === self.location.origin ||
-    url.hostname.includes('cdnjs.cloudflare.com') ||
-    url.hostname.includes('fonts.googleapis.com') ||
-    url.hostname.includes('fonts.gstatic.com')
+    isTrustedCdn
   ) {
     event.respondWith(
       caches.open(STATIC_CACHE).then(async (cache) => {
